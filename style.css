@@ -22,6 +22,8 @@
 
 html {
     scroll-behavior: smooth;
+    overflow-x: hidden;
+    width: 100%;
 }
 
 body {
@@ -29,6 +31,7 @@ body {
     color: var(--text-dark);
     line-height: 1.6;
     overflow-x: hidden;
+    width: 100%;
     position: relative;
 }
 
@@ -198,6 +201,7 @@ ul {
     display: flex;
     align-items: center;
     padding-top: 100px;
+    overflow: hidden;
 }
 
 .hero-container {
