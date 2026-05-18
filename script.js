@@ -43,6 +43,8 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
+let currentUser = null;
+
 // Navbar scroll effect
 const navbar = document.querySelector('.navbar');
 if (navbar) {
@@ -290,6 +292,7 @@ window.switchStudentTab = function(tabId) {
 
 onAuthStateChanged(auth, (user) => {
     if (user) {
+        currentUser = user;
         // User is signed in.
         if (authButtons) authButtons.style.display = 'none';
         if (userProfile) userProfile.style.display = 'flex';
@@ -368,6 +371,7 @@ onAuthStateChanged(auth, (user) => {
         loadStudentDashboardData(user.uid);
 
     } else {
+        currentUser = null;
         // User is signed out.
         if (authButtons) authButtons.style.display = 'flex';
         if (userProfile) userProfile.style.display = 'none';
