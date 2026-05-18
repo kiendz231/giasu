@@ -552,6 +552,72 @@ function loadStudentDocsRealtime() {
     }, (err) => console.error("Lỗi đồng bộ tài liệu:", err));
 }
 
+let jitsiApiInstance = null;
+let currentLiveClassData = null;
+
+function joinEmbeddedClassroom() {
+    const videoArea = document.getElementById('classroomVideoDynamic');
+    if (!videoArea || !currentLiveClassData) return;
+
+    const data = currentLiveClassData;
+    // Generate clean room name hash from meetUrl
+    const cleanRoomName = 'EduBourbonLive_' + (data.meetUrl ? data.meetUrl.replace(/[^a-zA-Z0-9]/g, '') : 'Classroom');
+
+    videoArea.innerHTML = `
+        <div id="jitsi-meet-container" style="height: 380px; width: 100%; border-radius: 16px; overflow: hidden; background: #000; position: relative; border: 1.5px solid rgba(255, 255, 255, 0.15);"></div>
+        <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(15, 23, 42, 0.03); padding: 12px 20px; border-radius: 0 0 16px 16px; margin-top: -8px; border: 1px solid rgba(15, 23, 42, 0.06); border-top: none;">
+            <div style="font-size: 13px; font-weight: 600; color: #475569; display: flex; align-items: center; gap: 8px;">
+                <span style="display: inline-block; width: 8px; height: 8px; background: #ef4444; border-radius: 50%; animation: pulseRed 1.5s infinite;"></span>
+                Học trực tuyến: <strong style="color: #0f172a;">${data.title}</strong>
+            </div>
+            <button class="btn btn-outline btn-sm" onclick="leaveEmbeddedClassroom()" style="color: #ef4444; border-color: #fca5a5; padding: 6px 14px; border-radius: 8px; font-size: 12px; cursor: pointer; font-weight: 700; background: white; transition: all 0.2s;">🚪 Rời Phòng Học</button>
+        </div>
+    `;
+
+    try {
+        const domain = 'meet.jit.si';
+        const options = {
+            roomName: cleanRoomName,
+            width: '100%',
+            height: '100%',
+            parentNode: document.getElementById('jitsi-meet-container'),
+            userInfo: {
+                displayName: (currentUser && currentUser.displayName) ? currentUser.displayName : 'Học Viên'
+            },
+            configOverwrite: {
+                startWithAudioMuted: true,
+                startWithVideoMuted: true,
+                prejoinPageEnabled: false,
+                disableDeepLinking: true
+            },
+            interfaceConfigOverwrite: {
+                SHOW_JITSI_WATERMARK: false,
+                SHOW_BRAND_WATERMARK: false,
+                TOOLBAR_BUTTONS: [
+                    'microphone', 'camera', 'closedcaptions', 'desktop', 'fullscreen',
+                    'fodeviceselection', 'hangup', 'profile', 'chat', 'recording',
+                    'settings', 'raisehand', 'videoquality', 'tileview'
+                ]
+            }
+        };
+
+        jitsiApiInstance = new JitsiMeetExternalAPI(domain, options);
+    } catch (e) {
+        console.error("Lỗi khởi tạo Jitsi Meet:", e);
+        videoArea.innerHTML = `<div style="padding: 30px; text-align: center; color: #ef4444;">Không thể kết nối phòng học. Lỗi: ${e.message}</div>`;
+    }
+}
+
+window.joinEmbeddedClassroom = joinEmbeddedClassroom;
+
+window.leaveEmbeddedClassroom = function() {
+    if (jitsiApiInstance) {
+        jitsiApiInstance.dispose();
+        jitsiApiInstance = null;
+    }
+    loadStudentClassroomRealtime();
+};
+
 function loadStudentClassroomRealtime() {
     const videoArea = document.getElementById('classroomVideoDynamic');
     const playlist = document.getElementById('lessonListDynamic');
@@ -560,6 +626,11 @@ function loadStudentClassroomRealtime() {
         onSnapshot(doc(db, "classroom", "live"), (snap) => {
             if (snap.exists()) {
                 const data = snap.data();
+                currentLiveClassData = data;
+
+                // If currently inside the meeting, do not overwrite the UI
+                if (jitsiApiInstance) return;
+
                 videoArea.innerHTML = `
                     <div class="video-placeholder" style="background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%); border-radius: 16px; overflow: hidden; padding: 40px; position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; color: white; text-align: center; height: 380px;">
                         <!-- Absolute pulsing background aura -->
@@ -573,7 +644,7 @@ function loadStudentClassroomRealtime() {
 
                         <!-- Brand / illustration -->
                         <div style="display: flex; align-items: center; justify-content: center; gap: 16px; margin-bottom: 24px; z-index: 1;">
-                            <img src="https://upload.wikimedia.org/wikipedia/commons/9/9b/Google_Meet_icon_%282020%29.svg" alt="Google Meet Logo" style="width: 70px; height: 70px; filter: drop-shadow(0 8px 16px rgba(0, 0, 0, 0.2));">
+                            <img src="https://upload.wikimedia.org/wikipedia/commons/d/d7/Jitsi_Logo.svg" alt="Jitsi Meet Logo" style="width: 70px; height: 70px; filter: drop-shadow(0 8px 16px rgba(0, 0, 0, 0.2));">
                         </div>
 
                         <!-- Live room info -->
@@ -582,20 +653,21 @@ function loadStudentClassroomRealtime() {
                             👨‍🏫 Giảng viên: <strong style="color: #f1f5f9;">${data.instructor}</strong> &nbsp;•&nbsp; 👤 <strong style="color: #3b82f6;">${data.viewers}</strong> học viên đang tham gia
                         </p>
 
-                        <!-- Pulse Button to open Google Meet -->
-                        <button class="btn btn-primary" onclick="window.open('${data.meetUrl || 'https://meet.google.com'}', '_blank')" style="background: linear-gradient(135deg, #0f9d58, #0b8043); color: white; padding: 14px 32px; border-radius: 14px; font-size: 15px; font-weight: 700; border: none; cursor: pointer; box-shadow: 0 10px 25px rgba(11, 128, 67, 0.4); display: flex; align-items: center; gap: 10px; transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1); z-index: 1; text-transform: none;">
+                        <!-- Pulse Button to open Jitsi Embedded Room -->
+                        <button class="btn btn-primary" onclick="joinEmbeddedClassroom()" style="background: linear-gradient(135deg, #3b82f6, #1d4ed8); color: white; padding: 14px 32px; border-radius: 14px; font-size: 15px; font-weight: 700; border: none; cursor: pointer; box-shadow: 0 10px 25px rgba(59, 130, 246, 0.4); display: flex; align-items: center; gap: 10px; transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1); z-index: 1; text-transform: none;">
                             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="fill: white;">
                                 <path d="M19 10.5V6C19 4.9 18.1 4 17 4H3C1.9 4 1 4.9 1 6V18C1 19.1 1.9 20 3 20H17C18.1 20 19 19.1 19 18V13.5L24 18.5V5.5L19 10.5ZM17 18H3V6H17V18Z" fill="white"/>
                             </svg>
-                            Tham Gia Phòng Học Google Meet 🚀
+                            Vào Phòng Học Trực Tuyến Ngay 🚀
                         </button>
                     </div>
                     <div class="video-controls" style="background: rgba(15, 23, 42, 0.03); border-top: 1px solid rgba(15, 23, 42, 0.06); padding: 16px 24px; border-radius: 0 0 16px 16px; margin-top: -16px; border-top-left-radius: 0; border-top-right-radius: 0; display: flex; justify-content: space-between; font-size: 13px; font-weight: 600; color: #475569;">
                         <span>🟢 LỚP HỌC TRỰC TUYẾN CHÍNH THỨC</span>
-                        <span>Nhấn để mở cuộc họp trong tab mới</span>
+                        <span>Nhấn để học trực tiếp ngay trên website của bạn</span>
                     </div>
                 `;
             } else {
+                currentLiveClassData = null;
                 videoArea.innerHTML = `<div style="padding: 30px; text-align: center; color: white;">Không có lớp học live nào đang diễn ra.</div>`;
             }
         }, (err) => console.error("Lỗi đồng bộ Live Classroom:", err));
