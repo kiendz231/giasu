@@ -119,12 +119,16 @@ if (profileEditForm) {
 // Logout button
 if (profileLogoutBtn) {
     profileLogoutBtn.addEventListener('click', async () => {
+        const confirmLogout = confirm("Bạn có chắc chắn muốn đăng xuất khỏi tài khoản?");
+        if (!confirmLogout) return;
+
         try {
             await signOut(auth);
             alert('Đăng xuất thành công!');
             window.location.href = 'index.html';
         } catch (error) {
             console.error("Lỗi đăng xuất:", error);
+            alert(`Lỗi đăng xuất: ${error.message}`);
         }
     });
 }
