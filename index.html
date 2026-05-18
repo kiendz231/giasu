@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EDU BOURBON</title>
+    <meta name="description" content="Khóa học online cung cấp kiến thức thực chiến và chất lượng cao.">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <nav class="navbar">
+        <div class="container nav-container">
+            <a href="#" class="logo">EDU<span class="text-blue">BOURBON</span></a>
+            <ul class="nav-links">
+                <li><a href="#about">Giới Thiệu</a></li>
+                <li><a href="#features">Lợi Ích</a></li>
+            </ul>
+            <div class="auth-buttons" id="authButtons">
+                <button class="btn btn-outline" onclick="openModal('login')">Đăng Nhập</button>
+                <button class="btn btn-primary" onclick="openModal('register')">Đăng Ký</button>
+            </div>
+
+            <div class="user-profile" id="userProfile" style="display: none;">
+                <a href="admin.html" class="btn btn-outline nav-admin-btn" id="adminBtn" style="display: none;">
+                    <span class="btn-text">Admin</span>
+                    <span class="btn-icon">🛠️</span>
+                </a>
+                <a href="profile.html" class="user-info" title="Xem và sửa hồ sơ">
+                    <img id="userAvatar" src="" alt="Avatar" class="avatar-img" style="display: none;">
+                    <div id="userAvatarPlaceholder" class="avatar-placeholder">U</div>
+                    <span id="userName" class="user-name">User Name</span>
+                </a>
+                <button class="btn btn-logout nav-logout-btn" id="logoutBtn">
+                    <span class="btn-text">Đăng Xuất</span>
+                    <span class="btn-icon">🚪</span>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <header class="hero" id="about">
+        <div class="container hero-container">
+            <div class="hero-content">
+                <div class="badge">🔥 Ưu đãi 50% hôm nay</div>
+                <h1 class="hero-title">Nâng Tầm Kỹ Năng Với Khóa Học <span class="text-gradient">Đỉnh Cao</span></h1>
+                <p class="hero-desc">Trải nghiệm nền tảng học tập trực tuyến hiện đại với gia sư cực "chill". Kiến
+                    thức thực chiến giúp bạn đạt điểm cao hơn trong kì thi.</p>
+                <div class="hero-actions">
+                    <button class="btn btn-primary btn-lg" onclick="openModal('register')">Tham Gia Ngay</button>
+                    <a href="#features" class="btn btn-outline btn-lg">Xem Lộ Trình</a>
+                </div>
+                <div class="stats">
+                    <div class="stat-item">
+                        <span class="stat-number">4.9/5</span>
+                        <span class="stat-text">Đánh giá</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-number">40+</span>
+                        <span class="stat-text">Giờ học</span>
+                    </div>
+                </div>
+            </div>
+            <div class="hero-image-wrapper">
+                <div class="glass-card image-card">
+                    <img src="meo.jpeg" alt="Khóa học online vibe trắng xanh" class="hero-image">
+
+                </div>
+                <div class="blob shape-1"></div>
+                <div class="blob shape-2"></div>
+            </div>
+        </div>
+    </header>
+
+    <section id="features" class="features section">
+        <div class="container">
+            <div class="section-header">
+                <h2>Tại Sao Chọn <span class="text-blue">EDU BOURBON</span>?</h2>
+                <p>Khám phá những đặc quyền chỉ có tại khóa học của chúng tôi</p>
+            </div>
+            <div class="features-grid">
+                <div class="feature-card glass-card">
+                    <div class="feature-icon">💡</div>
+                    <h3>Thực Chiến 100%</h3>
+                    <p>Học đi đôi với hành, ứng dụng ngay kiến thức vào bài kiểm tra của bạn.</p>
+                </div>
+                <div class="feature-card glass-card">
+                    <div class="feature-icon">⚡️</div>
+                    <h3>Chuyên Gia Đồng Hành</h3>
+                    <p>Đội ngũ giảng viên, gia sư luôn sẵn sàng hỗ trợ bạn 24/7.</p>
+                </div>
+                <div class="feature-card glass-card">
+                    <div class="feature-icon">🎯</div>
+                    <h3>Kiến Thức Cập Nhật</h3>
+                    <p>Tài liệu luôn được cập nhật để phù hợp với chương trình học.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="enroll" class="cta-section section">
+        <div class="container">
+            <div class="cta-box glass-card">
+                <div class="blob shape-3"></div>
+                <h2>Sẵn Sàng Bắt Đầu Hành Trình Mới?</h2>
+                <p>Chỉ còn 5 suất ưu đãi giảm 50% trong hôm nay.</p>
+                <form class="enroll-form">
+                    <input type="email" placeholder="Nhập email của bạn" required class="input-glass">
+                    <button type="submit" class="btn btn-primary btn-lg">Nhận Ưu Đãi</button>
+                </form>
+            </div>
+        </div>
+    </section>
+
+    <footer>
+        <div class="container footer-container">
+            <div class="footer-info">
+                <a href="#" class="logo">EDU<span class="text-blue">BOURBON</span></a>
+                <p>Nền tảng học tập trực tuyến mang đến trải nghiệm tuyệt vời nhất cho học viên.</p>
+            </div>
+            <div class="footer-links">
+                <a href="#">Điều khoản</a>
+                <a href="#">Bảo mật</a>
+                <a href="#">Liên hệ</a>
+            </div>
+            <p class="copyright">&copy; 2026 EDUBOURBON. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <!-- Auth Modal -->
+    <div class="modal-overlay" id="authModal">
+        <div class="modal-content glass-card auth-modal-grid">
+            <button class="modal-close" onclick="closeModal()">×</button>
+
+            <!-- Left Panel: Graphic & Intro -->
+            <div class="auth-left-panel">
+                <div class="auth-panel-glow"></div>
+                <div class="auth-panel-content">
+                    <span class="auth-panel-logo">EDU<span class="text-white">BOURBON</span></span>
+                    <div>
+                        <h3>Chào mừng đến với EDUBOURBON</h3>
+                        <p style="margin-top: 15px; opacity: 0.85;">Giao lưu, học hỏi và phát triển cùng cộng đồng
+                            giáo dục lớn mạnh.</p>
+                    </div>
+                    <div class="auth-floating-badge">
+                        <span class="badge-icon">⭐️</span>
+                        <div>
+                            <strong>Chất lượng 5 sao</strong>
+                            <span style="display: block; font-size: 11px; opacity: 0.8;">Hệ thống học tập trực
+                                tuyến thông minh</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Panel: Forms -->
+            <div class="auth-right-panel">
+                <div class="modal-tabs">
+                    <button class="tab-btn active" onclick="switchTab('login')" id="tab-login">Đăng Nhập</button>
+                    <button class="tab-btn" onclick="switchTab('register')" id="tab-register">Đăng Ký</button>
+                </div>
+
+                <!-- Login Form -->
+                <form id="loginForm" class="auth-form active">
+                    <div class="input-group">
+                        <span class="input-icon">✉️</span>
+                        <input type="email" id="loginEmail" placeholder="Email" class="input-glass" required>
+                    </div>
+                    <div class="input-group">
+                        <span class="input-icon">🔒</span>
+                        <input type="password" id="loginPassword" placeholder="Mật khẩu" class="input-glass" required>
+                    </div>
+
+                    <div class="form-options">
+                        <label class="checkbox-container">
+                            <input type="checkbox" id="loginRemember">
+                            <span class="checkmark"></span>
+                            Nhớ mật khẩu
+                        </label>
+                        <a href="#" class="forgot-pass">Quên mật khẩu?</a>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary" style="width: 100%; padding: 14px;">Đăng Nhập</button>
+
+                    <div class="auth-divider">
+                        <span>Hoặc tiếp tục với</span>
+                    </div>
+
+                    <div class="social-logins">
+                        <button type="button" class="btn-social google-btn">
+                            <img src="https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg"
+                                alt="Google">
+                            Google
+                        </button>
+                    </div>
+                </form>
+
+                <!-- Register Form -->
+                <form id="registerForm" class="auth-form">
+                    <div class="input-group">
+                        <span class="input-icon">👤</span>
+                        <input type="text" id="registerName" placeholder="Họ và tên" class="input-glass" required>
+                    </div>
+                    <div class="input-group">
+                        <span class="input-icon">✉️</span>
+                        <input type="email" id="registerEmail" placeholder="Email" class="input-glass" required>
+                    </div>
+                    <div class="input-group">
+                        <span class="input-icon">🔒</span>
+                        <input type="password" id="registerPassword" placeholder="Mật khẩu" class="input-glass"
+                            required>
+                    </div>
+
+                    <label class="checkbox-container" style="margin-bottom: 5px;">
+                        <input type="checkbox" required>
+                        <span class="checkmark"></span>
+                        Tôi đồng ý với điều khoản dịch vụ
+                    </label>
+
+                    <button type="submit" class="btn btn-primary" style="width: 100%; padding: 14px;">Tạo Tài
+                        Khoản</button>
+
+                    <div class="auth-divider">
+                        <span>Hoặc tiếp tục với</span>
+                    </div>
+
+                    <div class="social-logins">
+                        <button type="button" class="btn-social google-btn">
+                            <img src="https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg"
+                                alt="Google">
+                            Google
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="script.js"></script>
+</body>
+
+</html>

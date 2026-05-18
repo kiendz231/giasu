@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hệ Thống Quản Trị | EDU BOURBON</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="admin-body">
+    <nav class="navbar scrolled">
+        <div class="container nav-container">
+            <a href="index.html" class="logo">EDU<span class="text-blue">BOURBON</span> <span class="admin-badge">ADMIN</span></a>
+            <div style="display: flex; gap: 15px; align-items: center;">
+                <a href="index.html" class="btn btn-outline" style="padding: 8px 16px; font-size: 14px; border-radius: 20px;">
+                    ← Quay lại trang chủ
+                </a>
+                <button class="btn btn-logout" id="adminLogoutBtn" style="padding: 8px 16px; font-size: 14px; border-radius: 20px;">Đăng Xuất</button>
+            </div>
+        </div>
+    </nav>
+
+    <main class="admin-container container">
+        <!-- Stats Section -->
+        <section class="admin-stats-grid">
+            <div class="stat-card glass-card">
+                <div class="stat-icon">👥</div>
+                <div>
+                    <h3 id="statTotalUsers">0</h3>
+                    <p>Tổng Học Viên</p>
+                </div>
+            </div>
+            <div class="stat-card glass-card">
+                <div class="stat-icon">🎯</div>
+                <div>
+                    <h3 id="statTotalLeads">0</h3>
+                    <p>Khách Đăng Ký Ưu Đãi</p>
+                </div>
+            </div>
+            <div class="stat-card glass-card">
+                <div class="stat-icon">⚡️</div>
+                <div>
+                    <h3 id="statTotalUpdates">0</h3>
+                    <p>Nhật Ký Cập Nhật</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Main Workspace: Tabs -->
+        <section class="admin-workspace glass-card">
+            <div class="admin-tabs">
+                <button class="admin-tab-btn active" onclick="switchAdminTab('users')" id="tab-users">👤 Quản Lý Học Viên</button>
+                <button class="admin-tab-btn" onclick="switchAdminTab('leads')" id="tab-leads">✉️ Khách Nhận Ưu Đãi (Leads)</button>
+                <button class="admin-tab-btn" onclick="switchAdminTab('updates')" id="tab-updates">📝 Nhật Ký Hoạt Động</button>
+            </div>
+
+            <!-- Content Area 1: Users -->
+            <div class="admin-tab-content active" id="content-users">
+                <div class="table-header">
+                    <h4>Danh sách học viên đăng ký</h4>
+                    <span class="table-count" id="count-users">0 học viên</span>
+                </div>
+                <div class="table-responsive">
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>Học viên</th>
+                                <th>Email</th>
+                                <th>UID tài khoản</th>
+                                <th>Đăng ký qua</th>
+                                <th>Ngày tham gia</th>
+                            </tr>
+                        </thead>
+                        <tbody id="users-table-body">
+                            <tr>
+                                <td colspan="5" class="table-loading">Đang tải dữ liệu...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Content Area 2: Leads -->
+            <div class="admin-tab-content" id="content-leads">
+                <div class="table-header">
+                    <h4>Danh sách email nhận ưu đãi 50%</h4>
+                    <span class="table-count" id="count-leads">0 email</span>
+                </div>
+                <div class="table-responsive">
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>Email Khách Hàng</th>
+                                <th>Thời Gian Gửi</th>
+                                <th>Hành Động</th>
+                            </tr>
+                        </thead>
+                        <tbody id="leads-table-body">
+                            <tr>
+                                <td colspan="3" class="table-loading">Đang tải dữ liệu...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Content Area 3: Updates -->
+            <div class="admin-tab-content" id="content-updates">
+                <div class="table-header">
+                    <h4>Lịch sử cập nhật hồ sơ cá nhân</h4>
+                    <span class="table-count" id="count-updates">0 hoạt động</span>
+                </div>
+                <div class="table-responsive">
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>UID Học Viên</th>
+                                <th>Tên Mới Cập Nhật</th>
+                                <th>Ảnh Đại Diện Mới</th>
+                                <th>Thời Gian Cập Nhật</th>
+                            </tr>
+                        </thead>
+                        <tbody id="updates-table-body">
+                            <tr>
+                                <td colspan="4" class="table-loading">Đang tải dữ liệu...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script type="module" src="admin.js"></script>
+</body>
+</html>
