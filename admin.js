@@ -15,7 +15,8 @@ import {
     setDoc,
     getDoc,
     addDoc,
-    serverTimestamp
+    serverTimestamp,
+    onSnapshot
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
 // Your web app's Firebase configuration
@@ -84,111 +85,127 @@ function formatTime(timestamp) {
 }
 
 // Fetch all database records
+// Fetch all database records in real-time
 async function loadAllData() {
     try {
         // Ensure default records exist in Firestore
         await seedDefaultData();
 
-        await Promise.all([
-            loadUsers(),
-            loadLeads(),
-            loadUpdates(),
-            loadCourses(),
-            loadDocs(),
-            loadClassroom()
-        ]);
+        // Register real-time listeners
+        loadUsersRealtime();
+        loadLeadsRealtime();
+        loadUpdatesRealtime();
+        loadCoursesRealtime();
+        loadDocsRealtime();
+        loadClassroomRealtime();
     } catch (error) {
         console.error("Lỗi khi tải dữ liệu bảng:", error);
     }
 }
 
-// 1. Fetch Users
-async function loadUsers() {
-    try {
-        // Fetch active courses to render checkboxes dynamically
-        const coursesSnapshot = await getDocs(collection(db, "courses"));
-        const activeCourses = [];
-        coursesSnapshot.forEach(docSnap => {
-            activeCourses.push({ id: docSnap.id, ...docSnap.data() });
-        });
+// 1. Fetch Users in Real-time
+let activeCoursesCache = [];
+let studentPermissionsCache = {};
+let usersCache = [];
 
-        // Fetch all course permissions at once to prevent N+1 queries
-        const coursePermissions = {};
-        const permissionsSnapshot = await getDocs(collection(db, "student_courses"));
-        permissionsSnapshot.forEach(doc => {
-            coursePermissions[doc.id] = doc.data();
-        });
+function renderUsersTable() {
+    if (!usersTableBody) return;
+    const total = usersCache.length;
+    statTotalUsers.textContent = total;
+    countUsers.textContent = `${total} học viên`;
 
-        const usersSnapshot = await getDocs(query(collection(db, "users"), orderBy("createdAt", "desc")));
-        const total = usersSnapshot.size;
-        statTotalUsers.textContent = total;
-        countUsers.textContent = `${total} học viên`;
-
-        if (total === 0) {
-            usersTableBody.innerHTML = `<tr><td colspan="6" class="table-empty">Chưa có học viên nào đăng ký.</td></tr>`;
-            return;
-        }
-
-        usersTableBody.innerHTML = '';
-        usersSnapshot.forEach((docSnap) => {
-            const data = docSnap.data();
-            const permissions = coursePermissions[data.uid] || {};
-            
-            const row = document.createElement('tr');
-            
-            // Build dynamic checkboxes
-            let checkboxHtml = `<div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center;">`;
-            activeCourses.forEach(c => {
-                const isChecked = !!permissions[c.id];
-                checkboxHtml += `
-                    <label style="display: flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 500; cursor: pointer;">
-                        <input type="checkbox" class="course-toggle" data-uid="${data.uid}" data-course="${c.id}" ${isChecked ? 'checked' : ''}> ${c.icon} ${c.title.split(' ')[0]}
-                    </label>
-                `;
-            });
-            checkboxHtml += `</div>`;
-
-            row.innerHTML = `
-                <td><strong>${data.name || 'Không rõ'}</strong></td>
-                <td>${data.email}</td>
-                <td><code style="font-size: 11px; background: rgba(15,23,42,0.05); padding: 2px 6px; border-radius: 4px;">${data.uid}</code></td>
-                <td><span style="font-size: 11px; font-weight:700; background: ${data.provider === 'google' ? '#f0fdf4' : '#eff6ff'}; color: ${data.provider === 'google' ? '#166534' : '#1e40af'}; padding: 4px 10px; border-radius: 50px;">${(data.provider || 'Password').toUpperCase()}</span></td>
-                <td>${formatTime(data.createdAt)}</td>
-                <td>${checkboxHtml}</td>
-            `;
-            usersTableBody.appendChild(row);
-        });
-
-        // Add event listeners to course toggles
-        document.querySelectorAll('.course-toggle').forEach(checkbox => {
-            checkbox.addEventListener('change', async (e) => {
-                const uid = e.target.getAttribute('data-uid');
-                const course = e.target.getAttribute('data-course');
-                const isChecked = e.target.checked;
-                
-                try {
-                    await setDoc(doc(db, "student_courses", uid), {
-                        [course]: isChecked
-                    }, { merge: true });
-                } catch (err) {
-                    console.error("Lỗi cập nhật quyền học:", err);
-                    alert("Không thể cập nhật quyền học: " + err.message);
-                    e.target.checked = !isChecked; // Revert
-                }
-            });
-        });
-
-    } catch (e) {
-        console.error("Lỗi loadUsers:", e);
-        usersTableBody.innerHTML = `<tr><td colspan="6" class="table-error">Lỗi tải dữ liệu. Hãy chắc chắn Firestore rules cho phép truy cập.</td></tr>`;
+    if (total === 0) {
+        usersTableBody.innerHTML = `<tr><td colspan="6" class="table-empty">Chưa có học viên nào đăng ký.</td></tr>`;
+        return;
     }
+
+    usersTableBody.innerHTML = '';
+    usersCache.forEach((data) => {
+        const permissions = studentPermissionsCache[data.uid] || {};
+        const row = document.createElement('tr');
+        
+        // Build dynamic checkboxes
+        let checkboxHtml = `<div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center;">`;
+        activeCoursesCache.forEach(c => {
+            const isChecked = !!permissions[c.id];
+            checkboxHtml += `
+                <label style="display: flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 500; cursor: pointer;">
+                    <input type="checkbox" class="course-toggle" data-uid="${data.uid}" data-course="${c.id}" ${isChecked ? 'checked' : ''}> ${c.icon} ${c.title.split(' ')[0]}
+                </label>
+            `;
+        });
+        checkboxHtml += `</div>`;
+
+        row.innerHTML = `
+            <td><strong>${data.name || 'Không rõ'}</strong></td>
+            <td>${data.email}</td>
+            <td><code style="font-size: 11px; background: rgba(15,23,42,0.05); padding: 2px 6px; border-radius: 4px;">${data.uid}</code></td>
+            <td><span style="font-size: 11px; font-weight:700; background: ${data.provider === 'google' ? '#f0fdf4' : '#eff6ff'}; color: ${data.provider === 'google' ? '#166534' : '#1e40af'}; padding: 4px 10px; border-radius: 50px;">${(data.provider || 'Password').toUpperCase()}</span></td>
+            <td>${formatTime(data.createdAt)}</td>
+            <td>${checkboxHtml}</td>
+        `;
+        usersTableBody.appendChild(row);
+    });
+
+    // Add event listeners to course toggles
+    document.querySelectorAll('.course-toggle').forEach(checkbox => {
+        checkbox.addEventListener('change', async (e) => {
+            const uid = e.target.getAttribute('data-uid');
+            const course = e.target.getAttribute('data-course');
+            const isChecked = e.target.checked;
+            
+            try {
+                await setDoc(doc(db, "student_courses", uid), {
+                    [course]: isChecked
+                }, { merge: true });
+            } catch (err) {
+                console.error("Lỗi cập nhật quyền học:", err);
+                alert("Không thể cập nhật quyền học: " + err.message);
+                e.target.checked = !isChecked; // Revert
+            }
+        });
+    });
 }
 
-// 2. Fetch Leads
-async function loadLeads() {
-    try {
-        const leadsSnapshot = await getDocs(query(collection(db, "leads"), orderBy("createdAt", "desc")));
-        const total = leadsSnapshot.size;
+function loadUsersRealtime() {
+    // 1. Listen to courses collection
+    onSnapshot(collection(db, "courses"), (snap) => {
+        activeCoursesCache = [];
+        snap.forEach(docSnap => {
+            activeCoursesCache.push({ id: docSnap.id, ...docSnap.data() });
+        });
+        renderUsersTable();
+    }, (err) => console.error("Lỗi đồng bộ courses trong loadUsers:", err));
+
+    // 2. Listen to student permissions
+    onSnapshot(collection(db, "student_courses"), (snap) => {
+        studentPermissionsCache = {};
+        snap.forEach(docSnap => {
+            studentPermissionsCache[docSnap.id] = docSnap.data();
+        });
+        renderUsersTable();
+    }, (err) => console.error("Lỗi đồng bộ student_courses:", err));
+
+    // 3. Listen to users collection
+    onSnapshot(query(collection(db, "users"), orderBy("createdAt", "desc")), (snap) => {
+        usersCache = [];
+        snap.forEach(docSnap => {
+            usersCache.push(docSnap.data());
+        });
+        renderUsersTable();
+    }, (err) => {
+        console.error("Lỗi đồng bộ users:", err);
+        if (usersTableBody) {
+            usersTableBody.innerHTML = `<tr><td colspan="6" class="table-error">Lỗi tải dữ liệu. Hãy chắc chắn Firestore rules cho phép truy cập.</td></tr>`;
+        }
+    });
+}
+
+// 2. Fetch Leads in Real-time
+function loadLeadsRealtime() {
+    if (!leadsTableBody) return;
+    onSnapshot(query(collection(db, "leads"), orderBy("createdAt", "desc")), (snap) => {
+        const total = snap.size;
         statTotalLeads.textContent = total;
         countLeads.textContent = `${total} khách hàng`;
 
@@ -198,7 +215,7 @@ async function loadLeads() {
         }
 
         leadsTableBody.innerHTML = '';
-        leadsSnapshot.forEach((documentSnapshot) => {
+        snap.forEach((documentSnapshot) => {
             const data = documentSnapshot.data();
             const docId = documentSnapshot.id;
             const row = document.createElement('tr');
@@ -222,25 +239,23 @@ async function loadLeads() {
                     try {
                         await deleteDoc(doc(db, "leads", docId));
                         alert('Xóa thành công!');
-                        loadLeads(); // Reload leads table
                     } catch (err) {
                         alert('Có lỗi xảy ra: ' + err.message);
                     }
                 }
             });
         });
-
-    } catch (e) {
+    }, (e) => {
         console.error("Lỗi loadLeads:", e);
         leadsTableBody.innerHTML = `<tr><td colspan="3" class="table-error">Lỗi tải dữ liệu.</td></tr>`;
-    }
+    });
 }
 
-// 3. Fetch Updates
-async function loadUpdates() {
-    try {
-        const updatesSnapshot = await getDocs(query(collection(db, "profile_updates"), orderBy("timestamp", "desc")));
-        const total = updatesSnapshot.size;
+// 3. Fetch Updates in Real-time
+function loadUpdatesRealtime() {
+    if (!updatesTableBody) return;
+    onSnapshot(query(collection(db, "profile_updates"), orderBy("timestamp", "desc")), (snap) => {
+        const total = snap.size;
         statTotalUpdates.textContent = total;
         countUpdates.textContent = `${total} hoạt động`;
 
@@ -250,7 +265,7 @@ async function loadUpdates() {
         }
 
         updatesTableBody.innerHTML = '';
-        updatesSnapshot.forEach((doc) => {
+        snap.forEach((doc) => {
             const data = doc.data();
             const row = document.createElement('tr');
             row.innerHTML = `
@@ -263,10 +278,10 @@ async function loadUpdates() {
             `;
             updatesTableBody.appendChild(row);
         });
-    } catch (e) {
+    }, (e) => {
         console.error("Lỗi loadUpdates:", e);
         updatesTableBody.innerHTML = `<tr><td colspan="4" class="table-error">Lỗi tải dữ liệu nhật ký.</td></tr>`;
-    }
+    });
 }
 
 // Expose tab switching to window scope
@@ -285,6 +300,13 @@ window.switchAdminTab = function(tab) {
 // 4. Seed Default Database Data if Empty
 async function seedDefaultData() {
     try {
+        const systemRef = doc(db, "system", "config");
+        const systemSnap = await getDoc(systemRef);
+        if (systemSnap.exists() && systemSnap.data().seeded) {
+            // Already seeded! Do not seed again even if empty.
+            return;
+        }
+
         const coursesCheck = await getDocs(collection(db, "courses"));
         if (coursesCheck.empty) {
             const defaultCourses = [
@@ -330,28 +352,31 @@ async function seedDefaultData() {
                 viewers: 42
             });
         }
+
+        // Set seeded flag so it never runs again
+        await setDoc(systemRef, { seeded: true });
     } catch (e) {
         console.error("Lỗi khi seedDefaultData:", e);
     }
 }
 
 // 5. Manage Courses Logic
-async function loadCourses() {
+// 5. Manage Courses Logic in Real-time
+function loadCoursesRealtime() {
     const listBody = document.getElementById('courses-list-body');
     const countSpan = document.getElementById('count-courses');
     if (!listBody) return;
 
-    try {
-        const snapshot = await getDocs(collection(db, "courses"));
-        countSpan.textContent = `${snapshot.size} khóa học`;
+    onSnapshot(collection(db, "courses"), (snap) => {
+        countSpan.textContent = `${snap.size} khóa học`;
 
-        if (snapshot.empty) {
+        if (snap.empty) {
             listBody.innerHTML = `<tr><td colspan="3" class="table-empty">Chưa có khóa học nào.</td></tr>`;
             return;
         }
 
         listBody.innerHTML = '';
-        snapshot.forEach(dSnap => {
+        snap.forEach(dSnap => {
             const data = dSnap.data();
             const row = document.createElement('tr');
             row.innerHTML = `
@@ -363,10 +388,10 @@ async function loadCourses() {
             `;
             listBody.appendChild(row);
         });
-    } catch (err) {
+    }, (err) => {
         console.error("Lỗi loadCourses:", err);
         listBody.innerHTML = `<tr><td colspan="3" class="table-error">Lỗi tải khóa học.</td></tr>`;
-    }
+    });
 }
 
 // Form create course submit
@@ -390,7 +415,6 @@ if (formCreateCourse) {
             });
             alert('Tạo khóa học thành công!');
             formCreateCourse.reset();
-            loadAllData(); // Reload all to sync checklists and tables
         } catch (err) {
             console.error("Lỗi khi thêm khóa học:", err);
             alert("Lỗi: " + err.message);
@@ -403,30 +427,28 @@ window.deleteCourse = async function(id) {
     try {
         await deleteDoc(doc(db, "courses", id));
         alert('Xóa khóa học thành công!');
-        loadAllData();
     } catch (err) {
         console.error("Lỗi khi xóa khóa học:", err);
         alert("Lỗi: " + err.message);
     }
 }
 
-// 6. Manage Docs Logic
-async function loadDocs() {
+// 6. Manage Docs Logic in Real-time
+function loadDocsRealtime() {
     const listBody = document.getElementById('docs-list-body');
     const countSpan = document.getElementById('count-docs');
     if (!listBody) return;
 
-    try {
-        const snapshot = await getDocs(collection(db, "documents"));
-        countSpan.textContent = `${snapshot.size} tài liệu`;
+    onSnapshot(collection(db, "documents"), (snap) => {
+        countSpan.textContent = `${snap.size} tài liệu`;
 
-        if (snapshot.empty) {
+        if (snap.empty) {
             listBody.innerHTML = `<tr><td colspan="3" class="table-empty">Chưa có tài liệu học tập nào.</td></tr>`;
             return;
         }
 
         listBody.innerHTML = '';
-        snapshot.forEach(dSnap => {
+        snap.forEach(dSnap => {
             const data = dSnap.data();
             const row = document.createElement('tr');
             row.innerHTML = `
@@ -438,10 +460,10 @@ async function loadDocs() {
             `;
             listBody.appendChild(row);
         });
-    } catch (err) {
+    }, (err) => {
         console.error("Lỗi loadDocs:", err);
         listBody.innerHTML = `<tr><td colspan="3" class="table-error">Lỗi tải tài liệu.</td></tr>`;
-    }
+    });
 }
 
 const formAddDoc = document.getElementById('form-add-doc');
@@ -457,7 +479,6 @@ if (formAddDoc) {
             await addDoc(collection(db, "documents"), { name, type, size, icon });
             alert('Thêm tài liệu thành công!');
             formAddDoc.reset();
-            loadDocs();
         } catch (err) {
             console.error("Lỗi khi thêm tài liệu:", err);
             alert("Lỗi: " + err.message);
@@ -470,15 +491,14 @@ window.deleteDocItem = async function(id) {
     try {
         await deleteDoc(doc(db, "documents", id));
         alert('Xóa tài liệu thành công!');
-        loadDocs();
     } catch (err) {
         console.error("Lỗi khi xóa tài liệu:", err);
         alert("Lỗi: " + err.message);
     }
 }
 
-// 7. Manage Classroom Logic
-async function loadClassroom() {
+// 7. Manage Classroom Logic in Real-time
+function loadClassroomRealtime() {
     const lessonsBody = document.getElementById('lessons-list-body');
     const countSpan = document.getElementById('count-lessons');
     
@@ -487,28 +507,28 @@ async function loadClassroom() {
     const liveInstructor = document.getElementById('live-instructor');
     const liveViewers = document.getElementById('live-viewers');
 
-    try {
-        // Load Live config
-        const liveSnap = await getDoc(doc(db, "classroom", "live"));
+    // Sync Live Info
+    onSnapshot(doc(db, "classroom", "live"), (liveSnap) => {
         if (liveSnap.exists()) {
             const data = liveSnap.data();
-            if (liveTitle) liveTitle.value = data.title || '';
-            if (liveInstructor) liveInstructor.value = data.instructor || '';
-            if (liveViewers) liveViewers.value = data.viewers || '';
+            if (liveTitle && document.activeElement !== liveTitle) liveTitle.value = data.title || '';
+            if (liveInstructor && document.activeElement !== liveInstructor) liveInstructor.value = data.instructor || '';
+            if (liveViewers && document.activeElement !== liveViewers) liveViewers.value = data.viewers || '';
         }
+    }, (err) => console.error("Lỗi đồng bộ classroom live:", err));
 
-        // Load lessons
-        const lessonsSnap = await getDocs(collection(db, "classroom_lessons"));
-        if (countSpan) countSpan.textContent = `${lessonsSnap.size} bài học`;
+    // Sync Playlist lessons
+    onSnapshot(collection(db, "classroom_lessons"), (snap) => {
+        if (countSpan) countSpan.textContent = `${snap.size} bài học`;
 
         if (!lessonsBody) return;
-        if (lessonsSnap.empty) {
+        if (snap.empty) {
             lessonsBody.innerHTML = `<tr><td colspan="3" class="table-empty">Chưa có bài học nào.</td></tr>`;
             return;
         }
 
         lessonsBody.innerHTML = '';
-        lessonsSnap.forEach(dSnap => {
+        snap.forEach(dSnap => {
             const data = dSnap.data();
             const row = document.createElement('tr');
             row.innerHTML = `
@@ -520,10 +540,7 @@ async function loadClassroom() {
             `;
             lessonsBody.appendChild(row);
         });
-
-    } catch (err) {
-        console.error("Lỗi loadClassroom:", err);
-    }
+    }, (err) => console.error("Lỗi đồng bộ lessons:", err));
 }
 
 // Form config live submit
@@ -538,7 +555,6 @@ if (formConfigLive) {
         try {
             await setDoc(doc(db, "classroom", "live"), { title, instructor, viewers });
             alert('Cập nhật phòng học trực tiếp thành công!');
-            loadClassroom();
         } catch (err) {
             console.error("Lỗi cập nhật livestream:", err);
             alert("Lỗi: " + err.message);
@@ -559,7 +575,6 @@ if (formAddLesson) {
             await addDoc(collection(db, "classroom_lessons"), { title, duration, status });
             alert('Thêm bài học thành công!');
             formAddLesson.reset();
-            loadClassroom();
         } catch (err) {
             console.error("Lỗi khi thêm bài học:", err);
             alert("Lỗi: " + err.message);
@@ -572,7 +587,6 @@ window.deleteLesson = async function(id) {
     try {
         await deleteDoc(doc(db, "classroom_lessons", id));
         alert('Xóa bài học thành công!');
-        loadClassroom();
     } catch (err) {
         console.error("Lỗi khi xóa bài học:", err);
         alert("Lỗi: " + err.message);

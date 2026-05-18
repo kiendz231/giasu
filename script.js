@@ -17,7 +17,9 @@ import {
     serverTimestamp,
     doc,
     getDoc,
-    getDocs
+    getDocs,
+    setDoc,
+    onSnapshot
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
 // Your web app's Firebase configuration
@@ -169,7 +171,7 @@ if (registerForm) {
             });
             
             // Save additional user info to Firestore database
-            await addDoc(collection(db, "users"), {
+            await setDoc(doc(db, "users", userCredential.user.uid), {
                 uid: userCredential.user.uid,
                 name: name,
                 email: email,
@@ -194,15 +196,15 @@ googleButtons.forEach(btn => {
             const result = await signInWithPopup(auth, provider);
             const user = result.user;
             
-            // Save / sync user in Firestore
-            await addDoc(collection(db, "users"), {
+            // Save / sync user in Firestore using setDoc with merge to preserve fields
+            await setDoc(doc(db, "users", user.uid), {
                 uid: user.uid,
                 name: user.displayName,
                 email: user.email,
                 photoURL: user.photoURL,
                 provider: 'google',
                 createdAt: serverTimestamp()
-            });
+            }, { merge: true });
 
             alert(`Đăng nhập bằng Google thành công! Xin chào ${user.displayName}`);
             window.closeModal();
@@ -336,9 +338,28 @@ onAuthStateChanged(auth, (user) => {
         const currentUserPlaceholder = document.getElementById('currentUserRankPlaceholder');
         if (currentUserName) currentUserName.textContent = user.displayName || user.email.split('@')[0];
         if (currentUserEmail) currentUserEmail.textContent = user.email;
-        if (currentUserPlaceholder) currentUserPlaceholder.textContent = (user.displayName || user.email).charAt(0).toUpperCase();
-
         switchStudentTab('courses');
+        
+        // Asynchronous Self-Healing user verification in Firestore
+        (async () => {
+            try {
+                const userRef = doc(db, "users", user.uid);
+                const userSnap = await getDoc(userRef);
+                if (!userSnap.exists()) {
+                    await setDoc(userRef, {
+                        uid: user.uid,
+                        name: user.displayName || user.email.split('@')[0],
+                        email: user.email,
+                        photoURL: user.photoURL || '',
+                        createdAt: serverTimestamp()
+                    });
+                    console.log("Self-healing: Created missing user document in Firestore.");
+                }
+            } catch (err) {
+                console.error("Lỗi tự động khôi phục dữ liệu học viên:", err);
+            }
+        })();
+
         loadStudentDashboardData(user.uid);
 
     } else {
@@ -401,110 +422,113 @@ window.toggleMenu = function() {
     }
 }
 
-// 9. Load Student Dashboard Data & Dynamic Sync
-async function loadStudentDashboardData(uid) {
-    try {
-        await Promise.all([
-            loadStudentCourses(uid),
-            loadStudentDocs(),
-            loadStudentClassroom()
-        ]);
-    } catch (err) {
-        console.error("Lỗi khi tải dữ liệu Dashboard học viên:", err);
-    }
-}
+// 9. Load Student Dashboard Data & Real-Time Sync
+let currentPermissions = {};
+let currentCourses = [];
 
-async function loadStudentCourses(uid) {
+function renderCoursesUI() {
     const grid = document.getElementById('coursesGridDynamic');
     if (!grid) return;
 
-    try {
-        const coursesSnap = await getDocs(collection(db, "courses"));
-        const coursesList = [];
-        coursesSnap.forEach(docSnap => {
-            coursesList.push({ id: docSnap.id, ...docSnap.data() });
-        });
+    if (currentCourses.length === 0) {
+        grid.innerHTML = `<div style="padding: 30px; text-align: center; color: #64748b; grid-column: 1/-1;">Hiện chưa có khóa học nào được phát hành.</div>`;
+        return;
+    }
 
-        const docSnap = await getDoc(doc(db, "student_courses", uid));
-        const permissions = docSnap.exists() ? docSnap.data() : {};
+    grid.innerHTML = '';
+    currentCourses.forEach(course => {
+        const hasAccess = !!currentPermissions[course.id];
+        const card = document.createElement('div');
+        card.className = 'course-card glass-card';
+        card.id = `courseCard-${course.id}`;
 
-        if (coursesList.length === 0) {
-            grid.innerHTML = `<div style="padding: 30px; text-align: center; color: #64748b; grid-column: 1/-1;">Hiện chưa có khóa học nào được phát hành.</div>`;
-            return;
+        const gradientClass = course.gradient || 'gradient-blue';
+
+        // Apply style if locked
+        if (!hasAccess) {
+            card.style.opacity = '0.7';
+            card.style.filter = 'grayscale(0.3)';
         }
 
-        grid.innerHTML = '';
-        coursesList.forEach(course => {
-            const hasAccess = !!permissions[course.id];
-            const card = document.createElement('div');
-            card.className = 'course-card glass-card';
-            card.id = `courseCard-${course.id}`;
+        // Setup dynamic buttons
+        let btnClass = course.id === 'math' ? 'btn btn-outline' : 'btn btn-primary';
+        let btnText = course.id === 'math' ? 'Bắt Đầu Học' : 'Tiếp Tục Học';
+        let onclickAction = `switchStudentTab('classroom')`;
 
-            const gradientClass = course.gradient || 'gradient-blue';
+        if (course.id === 'english') {
+            onclickAction = `alert('Đang tải nội dung khóa học...')`;
+        }
 
-            // Apply style if locked
-            if (!hasAccess) {
-                card.style.opacity = '0.7';
-                card.style.filter = 'grayscale(0.3)';
-            }
+        if (!hasAccess) {
+            btnClass = 'btn btn-outline';
+            btnText = 'Liên Hệ Admin';
+            onclickAction = `alert('Khóa học "${course.title}" chưa được cấp quyền bởi quản trị viên. Vui lòng liên hệ Admin để kích hoạt!')`;
+        }
 
-            // Setup dynamic buttons
-            let btnClass = course.id === 'math' ? 'btn btn-outline' : 'btn btn-primary';
-            let btnText = course.id === 'math' ? 'Bắt Đầu Học' : 'Tiếp Tục Học';
-            let onclickAction = `switchStudentTab('classroom')`;
+        const badgeText = hasAccess ? (course.badge || 'Đang học') : '🔒 Chưa Cấp';
+        const badgeStyle = hasAccess ? '' : 'style="background: #64748b;"';
 
-            if (course.id === 'english') {
-                onclickAction = `alert('Đang tải nội dung khóa học...')`;
-            }
-
-            if (!hasAccess) {
-                btnClass = 'btn btn-outline';
-                btnText = 'Liên Hệ Admin';
-                onclickAction = `alert('Khóa học "${course.title}" chưa được cấp quyền bởi quản trị viên. Vui lòng liên hệ Admin để kích hoạt!')`;
-            }
-
-            const badgeText = hasAccess ? (course.badge || 'Đang học') : '🔒 Chưa Cấp';
-            const badgeStyle = hasAccess ? '' : 'style="background: #64748b;"';
-
-            card.innerHTML = `
-                <div class="course-badge" ${badgeStyle}>${badgeText}</div>
-                <div class="course-header-bg ${gradientClass}">${course.icon || '💻'}</div>
-                <div class="course-body">
-                    <h3>${course.title}</h3>
-                    <p class="course-desc">${course.description}</p>
-                    <div class="course-progress-container">
-                        <div class="progress-info">
-                            <span>Tiến độ: ${course.progress || 0}%</span>
-                            <span>${hasAccess ? 'Đang cập nhật' : 'Chưa bắt đầu'}</span>
-                        </div>
-                        <div class="progress-bar">
-                            <div class="progress-fill" style="width: ${course.progress || 0}%; ${gradientClass === 'gradient-green' ? 'background: #10b981;' : ''}"></div>
-                        </div>
+        card.innerHTML = `
+            <div class="course-badge" ${badgeStyle}>${badgeText}</div>
+            <div class="course-header-bg ${gradientClass}">${course.icon || '💻'}</div>
+            <div class="course-body">
+                <h3>${course.title}</h3>
+                <p class="course-desc">${course.description}</p>
+                <div class="course-progress-container">
+                    <div class="progress-info">
+                        <span>Tiến độ: ${course.progress || 0}%</span>
+                        <span>${hasAccess ? 'Đang cập nhật' : 'Chưa bắt đầu'}</span>
                     </div>
-                    <button class="${btnClass}" style="width: 100%; border-radius: 12px; ${!hasAccess ? 'border-color: #94a3b8; color: #64748b;' : ''}" onclick="${onclickAction}">${btnText}</button>
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: ${course.progress || 0}%; ${gradientClass === 'gradient-green' ? 'background: #10b981;' : ''}"></div>
+                    </div>
                 </div>
-            `;
-            grid.appendChild(card);
-        });
+                <button class="${btnClass}" style="width: 100%; border-radius: 12px; ${!hasAccess ? 'border-color: #94a3b8; color: #64748b;' : ''}" onclick="${onclickAction}">${btnText}</button>
+            </div>
+        `;
+        grid.appendChild(card);
+    });
+}
+
+function loadStudentDashboardData(uid) {
+    try {
+        loadStudentCoursesRealtime(uid);
+        loadStudentDocsRealtime();
+        loadStudentClassroomRealtime();
     } catch (err) {
-        console.error("Lỗi loadStudentCourses:", err);
-        grid.innerHTML = `<div style="padding: 30px; text-align: center; color: #ef4444; grid-column: 1/-1;">Lỗi khi tải danh sách khóa học.</div>`;
+        console.error("Lỗi khi đăng ký đồng bộ Dashboard học viên:", err);
     }
 }
 
-async function loadStudentDocs() {
+function loadStudentCoursesRealtime(uid) {
+    // Listen to student permission doc
+    onSnapshot(doc(db, "student_courses", uid), (snap) => {
+        currentPermissions = snap.exists() ? snap.data() : {};
+        renderCoursesUI();
+    }, (err) => console.error("Lỗi đồng bộ quyền học:", err));
+
+    // Listen to courses collection
+    onSnapshot(collection(db, "courses"), (snap) => {
+        currentCourses = [];
+        snap.forEach(docSnap => {
+            currentCourses.push({ id: docSnap.id, ...docSnap.data() });
+        });
+        renderCoursesUI();
+    }, (err) => console.error("Lỗi đồng bộ khóa học:", err));
+}
+
+function loadStudentDocsRealtime() {
     const docsList = document.getElementById('docsListDynamic');
     if (!docsList) return;
 
-    try {
-        const snapshot = await getDocs(collection(db, "documents"));
-        if (snapshot.empty) {
+    onSnapshot(collection(db, "documents"), (snap) => {
+        if (snap.empty) {
             docsList.innerHTML = `<div style="padding: 30px; text-align: center; color: #64748b;">Chưa có tài liệu học tập nào được tải lên.</div>`;
             return;
         }
 
         docsList.innerHTML = '';
-        snapshot.forEach(docSnap => {
+        snap.forEach(docSnap => {
             const data = docSnap.data();
             const item = document.createElement('div');
             item.className = 'doc-item';
@@ -518,21 +542,17 @@ async function loadStudentDocs() {
             `;
             docsList.appendChild(item);
         });
-    } catch (err) {
-        console.error("Lỗi loadStudentDocs:", err);
-        docsList.innerHTML = `<div style="padding: 30px; text-align: center; color: #ef4444;">Lỗi khi tải tài liệu học tập.</div>`;
-    }
+    }, (err) => console.error("Lỗi đồng bộ tài liệu:", err));
 }
 
-async function loadStudentClassroom() {
+function loadStudentClassroomRealtime() {
     const videoArea = document.getElementById('classroomVideoDynamic');
     const playlist = document.getElementById('lessonListDynamic');
 
-    try {
-        if (videoArea) {
-            const liveSnap = await getDoc(doc(db, "classroom", "live"));
-            if (liveSnap.exists()) {
-                const data = liveSnap.data();
+    if (videoArea) {
+        onSnapshot(doc(db, "classroom", "live"), (snap) => {
+            if (snap.exists()) {
+                const data = snap.data();
                 videoArea.innerHTML = `
                     <div class="video-placeholder">
                         <div class="play-btn-pulse">▶</div>
@@ -547,17 +567,18 @@ async function loadStudentClassroom() {
             } else {
                 videoArea.innerHTML = `<div style="padding: 30px; text-align: center; color: white;">Không có lớp học live nào đang diễn ra.</div>`;
             }
-        }
+        }, (err) => console.error("Lỗi đồng bộ Live Classroom:", err));
+    }
 
-        if (playlist) {
-            const snapshot = await getDocs(collection(db, "classroom_lessons"));
-            if (snapshot.empty) {
+    if (playlist) {
+        onSnapshot(collection(db, "classroom_lessons"), (snap) => {
+            if (snap.empty) {
                 playlist.innerHTML = `<div style="padding: 20px; text-align: center; color: #64748b;">Chưa có bài học nào trong danh sách phát.</div>`;
                 return;
             }
 
             playlist.innerHTML = '';
-            snapshot.forEach(docSnap => {
+            snap.forEach(docSnap => {
                 const data = docSnap.data();
                 const item = document.createElement('div');
 
@@ -585,8 +606,6 @@ async function loadStudentClassroom() {
                 `;
                 playlist.appendChild(item);
             });
-        }
-    } catch (err) {
-        console.error("Lỗi loadStudentClassroom:", err);
+        }, (err) => console.error("Lỗi đồng bộ playlist bài học:", err));
     }
 }
