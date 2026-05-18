@@ -561,14 +561,38 @@ function loadStudentClassroomRealtime() {
             if (snap.exists()) {
                 const data = snap.data();
                 videoArea.innerHTML = `
-                    <div class="video-placeholder">
-                        <div class="play-btn-pulse">▶</div>
-                        <h3>${data.title}</h3>
-                        <p>Đang trực tiếp cùng ${data.instructor}</p>
+                    <div class="video-placeholder" style="background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%); border-radius: 16px; overflow: hidden; padding: 40px; position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; color: white; text-align: center; height: 380px;">
+                        <!-- Absolute pulsing background aura -->
+                        <div style="position: absolute; top: -50%; left: -50%; width: 200%; height: 200%; background: radial-gradient(circle, rgba(59, 130, 246, 0.15) 0%, rgba(0,0,0,0) 70%); animation: rotateAura 20s linear infinite; pointer-events: none;"></div>
+                        
+                        <!-- Top header -->
+                        <div style="display: flex; align-items: center; gap: 8px; background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); color: #ef4444; padding: 6px 14px; border-radius: 9999px; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 24px; z-index: 1;">
+                            <span style="display: inline-block; width: 8px; height: 8px; background: #ef4444; border-radius: 50%; animation: pulseRed 1.5s infinite;"></span>
+                            Lớp học đang phát trực tiếp
+                        </div>
+
+                        <!-- Brand / illustration -->
+                        <div style="display: flex; align-items: center; justify-content: center; gap: 16px; margin-bottom: 24px; z-index: 1;">
+                            <img src="https://upload.wikimedia.org/wikipedia/commons/9/9b/Google_Meet_icon_%282020%29.svg" alt="Google Meet Logo" style="width: 70px; height: 70px; filter: drop-shadow(0 8px 16px rgba(0, 0, 0, 0.2));">
+                        </div>
+
+                        <!-- Live room info -->
+                        <h3 style="font-size: 24px; font-weight: 800; color: #ffffff; margin-bottom: 10px; z-index: 1; max-width: 90%; line-height: 1.4; font-family: inherit;">${data.title}</h3>
+                        <p style="font-size: 15px; color: #94a3b8; margin-bottom: 30px; z-index: 1; font-weight: 500;">
+                            👨‍🏫 Giảng viên: <strong style="color: #f1f5f9;">${data.instructor}</strong> &nbsp;•&nbsp; 👤 <strong style="color: #3b82f6;">${data.viewers}</strong> học viên đang tham gia
+                        </p>
+
+                        <!-- Pulse Button to open Google Meet -->
+                        <button class="btn btn-primary" onclick="window.open('${data.meetUrl || 'https://meet.google.com'}', '_blank')" style="background: linear-gradient(135deg, #0f9d58, #0b8043); color: white; padding: 14px 32px; border-radius: 14px; font-size: 15px; font-weight: 700; border: none; cursor: pointer; box-shadow: 0 10px 25px rgba(11, 128, 67, 0.4); display: flex; align-items: center; gap: 10px; transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1); z-index: 1; text-transform: none;">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="fill: white;">
+                                <path d="M19 10.5V6C19 4.9 18.1 4 17 4H3C1.9 4 1 4.9 1 6V18C1 19.1 1.9 20 3 20H17C18.1 20 19 19.1 19 18V13.5L24 18.5V5.5L19 10.5ZM17 18H3V6H17V18Z" fill="white"/>
+                            </svg>
+                            Tham Gia Phòng Học Google Meet 🚀
+                        </button>
                     </div>
-                    <div class="video-controls">
-                        <span>🔴 ĐANG HỌC TRỰC TUYẾN</span>
-                        <span>Đang xem: ${data.viewers} học viên</span>
+                    <div class="video-controls" style="background: rgba(15, 23, 42, 0.03); border-top: 1px solid rgba(15, 23, 42, 0.06); padding: 16px 24px; border-radius: 0 0 16px 16px; margin-top: -16px; border-top-left-radius: 0; border-top-right-radius: 0; display: flex; justify-content: space-between; font-size: 13px; font-weight: 600; color: #475569;">
+                        <span>🟢 LỚP HỌC TRỰC TUYẾN CHÍNH THỨC</span>
+                        <span>Nhấn để mở cuộc họp trong tab mới</span>
                     </div>
                 `;
             } else {

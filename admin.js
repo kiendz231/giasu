@@ -351,7 +351,8 @@ async function seedDefaultData() {
             await setDoc(doc(db, "classroom", "live"), {
                 title: "Bài 2: Làm chủ CSS Grid & Responsive Layout",
                 instructor: "Gia sư Võ Anh Kiệt",
-                viewers: 42
+                viewers: 42,
+                meetUrl: "https://meet.google.com/vok-ienk-iet"
             });
         }
 
@@ -510,6 +511,7 @@ function loadClassroomRealtime() {
     const liveTitle = document.getElementById('live-title');
     const liveInstructor = document.getElementById('live-instructor');
     const liveViewers = document.getElementById('live-viewers');
+    const liveUrl = document.getElementById('live-url');
 
     // Sync Live Info
     onSnapshot(doc(db, "classroom", "live"), (liveSnap) => {
@@ -518,6 +520,7 @@ function loadClassroomRealtime() {
             if (liveTitle && document.activeElement !== liveTitle) liveTitle.value = data.title || '';
             if (liveInstructor && document.activeElement !== liveInstructor) liveInstructor.value = data.instructor || '';
             if (liveViewers && document.activeElement !== liveViewers) liveViewers.value = data.viewers || '';
+            if (liveUrl && document.activeElement !== liveUrl) liveUrl.value = data.meetUrl || '';
         }
     }, (err) => console.error("Lỗi đồng bộ classroom live:", err));
 
@@ -555,9 +558,10 @@ if (formConfigLive) {
         const title = document.getElementById('live-title').value;
         const instructor = document.getElementById('live-instructor').value;
         const viewers = parseInt(document.getElementById('live-viewers').value) || 0;
+        const meetUrl = document.getElementById('live-url').value;
 
         try {
-            await setDoc(doc(db, "classroom", "live"), { title, instructor, viewers });
+            await setDoc(doc(db, "classroom", "live"), { title, instructor, viewers, meetUrl });
             await showAlert('Cập nhật phòng học trực tiếp thành công!', 'Thành công', '✅');
         } catch (err) {
             console.error("Lỗi cập nhật livestream:", err);
