@@ -15,10 +15,13 @@
     <nav class="navbar">
         <div class="container nav-container">
             <a href="#" class="logo">EDU<span class="text-blue">BOURBON</span></a>
-            <ul class="nav-links">
-                <li><a href="#about">Giới Thiệu</a></li>
-                <li><a href="#features">Lợi Ích</a></li>
+            <ul class="nav-links" id="navLinks">
+                <li><a href="#about" onclick="toggleMenu()">Giới Thiệu</a></li>
+                <li><a href="#features" onclick="toggleMenu()">Lợi Ích</a></li>
+                <li class="mobile-only"><a href="#" onclick="openModal('login'); toggleMenu();">Đăng Nhập</a></li>
+                <li class="mobile-only"><a href="#" onclick="openModal('register'); toggleMenu();" class="btn-primary-mobile">Đăng Ký</a></li>
             </ul>
+            <div class="menu-icon" id="menuIcon">☰</div>
             <div class="auth-buttons" id="authButtons">
                 <button class="btn btn-outline" onclick="openModal('login')">Đăng Nhập</button>
                 <button class="btn btn-primary" onclick="openModal('register')">Đăng Ký</button>

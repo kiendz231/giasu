@@ -300,3 +300,23 @@ if (logoutBtn) {
         }
     });
 }
+
+// 8. Mobile Menu Drawer Toggling Logic
+const menuIcon = document.getElementById('menuIcon');
+const navLinks = document.getElementById('navLinks');
+
+if (menuIcon && navLinks) {
+    menuIcon.addEventListener('click', () => {
+        navLinks.classList.toggle('open');
+        menuIcon.textContent = navLinks.classList.contains('open') ? '✕' : '☰';
+    });
+}
+
+window.toggleMenu = function() {
+    if (navLinks) {
+        navLinks.classList.remove('open');
+    }
+    if (menuIcon) {
+        menuIcon.textContent = '☰';
+    }
+}
