@@ -248,6 +248,8 @@ const userAvatarPlaceholder = document.getElementById('userAvatarPlaceholder');
 const userName = document.getElementById('userName');
 const logoutBtn = document.getElementById('logoutBtn');
 const adminBtn = document.getElementById('adminBtn');
+const mobileLogin = document.getElementById('mobileLogin');
+const mobileRegister = document.getElementById('mobileRegister');
 
 const ADMIN_EMAILS = ['vokien609@gmail.com', 'admin@edubourbon.com', 'bourbon@edubourbon.com', 'admin@gmail.com'];
 
@@ -256,6 +258,10 @@ onAuthStateChanged(auth, (user) => {
         // User is signed in.
         if (authButtons) authButtons.style.display = 'none';
         if (userProfile) userProfile.style.display = 'flex';
+        
+        // Hide mobile dropdown login/register buttons
+        if (mobileLogin) mobileLogin.style.display = 'none';
+        if (mobileRegister) mobileRegister.style.display = 'none';
         
         if (userName) {
             userName.textContent = user.displayName || user.email.split('@')[0];
@@ -285,6 +291,10 @@ onAuthStateChanged(auth, (user) => {
         if (authButtons) authButtons.style.display = 'flex';
         if (userProfile) userProfile.style.display = 'none';
         if (adminBtn) adminBtn.style.display = 'none';
+        
+        // Show mobile dropdown login/register buttons
+        if (mobileLogin) mobileLogin.style.display = 'block';
+        if (mobileRegister) mobileRegister.style.display = 'block';
     }
 });
 
