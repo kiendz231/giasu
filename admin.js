@@ -18,6 +18,7 @@ import {
     serverTimestamp,
     onSnapshot
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+import { showAlert, showConfirm } from "./modals.js";
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
@@ -62,7 +63,7 @@ onAuthStateChanged(auth, async (user) => {
         const isAdmin = ADMIN_EMAILS.includes(user.email) || user.email.toLowerCase().includes('admin');
         
         if (!isAdmin) {
-            alert('Lỗi truy cập: Tài khoản của bạn không có quyền quản trị viên!');
+            await showAlert('Lỗi truy cập: Tài khoản của bạn không có quyền quản trị viên!', 'Lỗi truy cập', '❌');
             window.location.href = 'index.html';
             return;
         }
@@ -72,7 +73,7 @@ onAuthStateChanged(auth, async (user) => {
         loadAllData();
     } else {
         // Redirect to homepage if not logged in at all
-        alert('Vui lòng đăng nhập bằng tài khoản Admin để tiếp tục!');
+        await showAlert('Vui lòng đăng nhập bằng tài khoản Admin để tiếp tục!', 'Yêu cầu đăng nhập', '🔒');
         window.location.href = 'index.html';
     }
 });
@@ -160,7 +161,7 @@ function renderUsersTable() {
                 }, { merge: true });
             } catch (err) {
                 console.error("Lỗi cập nhật quyền học:", err);
-                alert("Không thể cập nhật quyền học: " + err.message);
+                await showAlert("Không thể cập nhật quyền học: " + err.message, "Lỗi cập nhật", "❌");
                 e.target.checked = !isChecked; // Revert
             }
         });
@@ -235,12 +236,13 @@ function loadLeadsRealtime() {
         document.querySelectorAll('.btn-delete-lead').forEach(btn => {
             btn.addEventListener('click', async (e) => {
                 const docId = e.target.getAttribute('data-id');
-                if (confirm('Bạn chắc chắn muốn xóa email này khỏi danh sách nhận ưu đãi?')) {
+                const isConfirmed = await showConfirm('Bạn chắc chắn muốn xóa email này khỏi danh sách nhận ưu đãi?', 'Xác nhận xóa lead', '🗑️');
+                if (isConfirmed) {
                     try {
                         await deleteDoc(doc(db, "leads", docId));
-                        alert('Xóa thành công!');
+                        await showAlert('Xóa thành công!', 'Thành công', '✅');
                     } catch (err) {
-                        alert('Có lỗi xảy ra: ' + err.message);
+                        await showAlert('Có lỗi xảy ra: ' + err.message, 'Lỗi', '❌');
                     }
                 }
             });
@@ -413,23 +415,24 @@ if (formCreateCourse) {
             await setDoc(doc(db, "courses", id), {
                 id, title, icon, badge, gradient, progress, description
             });
-            alert('Tạo khóa học thành công!');
+            await showAlert('Tạo khóa học thành công!', 'Thành công', '✨');
             formCreateCourse.reset();
         } catch (err) {
             console.error("Lỗi khi thêm khóa học:", err);
-            alert("Lỗi: " + err.message);
+            await showAlert("Lỗi: " + err.message, 'Lỗi', '❌');
         }
     });
 }
 
 window.deleteCourse = async function(id) {
-    if (!confirm('Bạn có chắc chắn muốn xóa khóa học này không?')) return;
+    const isConfirmed = await showConfirm('Bạn có chắc chắn muốn xóa khóa học này không?', 'Xác nhận xóa khóa học', '🗑️');
+    if (!isConfirmed) return;
     try {
         await deleteDoc(doc(db, "courses", id));
-        alert('Xóa khóa học thành công!');
+        await showAlert('Xóa khóa học thành công!', 'Thành công', '✅');
     } catch (err) {
         console.error("Lỗi khi xóa khóa học:", err);
-        alert("Lỗi: " + err.message);
+        await showAlert("Lỗi: " + err.message, 'Lỗi', '❌');
     }
 }
 
@@ -477,23 +480,24 @@ if (formAddDoc) {
 
         try {
             await addDoc(collection(db, "documents"), { name, type, size, icon });
-            alert('Thêm tài liệu thành công!');
+            await showAlert('Thêm tài liệu thành công!', 'Thành công', '✅');
             formAddDoc.reset();
         } catch (err) {
             console.error("Lỗi khi thêm tài liệu:", err);
-            alert("Lỗi: " + err.message);
+            await showAlert("Lỗi: " + err.message, 'Lỗi', '❌');
         }
     });
 }
 
 window.deleteDocItem = async function(id) {
-    if (!confirm('Bạn có chắc chắn muốn xóa tài liệu này không?')) return;
+    const isConfirmed = await showConfirm('Bạn có chắc chắn muốn xóa tài liệu này không?', 'Xác nhận xóa tài liệu', '🗑️');
+    if (!isConfirmed) return;
     try {
         await deleteDoc(doc(db, "documents", id));
-        alert('Xóa tài liệu thành công!');
+        await showAlert('Xóa tài liệu thành công!', 'Thành công', '✅');
     } catch (err) {
         console.error("Lỗi khi xóa tài liệu:", err);
-        alert("Lỗi: " + err.message);
+        await showAlert("Lỗi: " + err.message, 'Lỗi', '❌');
     }
 }
 
@@ -554,10 +558,10 @@ if (formConfigLive) {
 
         try {
             await setDoc(doc(db, "classroom", "live"), { title, instructor, viewers });
-            alert('Cập nhật phòng học trực tiếp thành công!');
+            await showAlert('Cập nhật phòng học trực tiếp thành công!', 'Thành công', '✅');
         } catch (err) {
             console.error("Lỗi cập nhật livestream:", err);
-            alert("Lỗi: " + err.message);
+            await showAlert("Lỗi: " + err.message, 'Lỗi', '❌');
         }
     });
 }
@@ -573,32 +577,35 @@ if (formAddLesson) {
 
         try {
             await addDoc(collection(db, "classroom_lessons"), { title, duration, status });
-            alert('Thêm bài học thành công!');
+            await showAlert('Thêm bài học thành công!', 'Thành công', '✅');
             formAddLesson.reset();
         } catch (err) {
             console.error("Lỗi khi thêm bài học:", err);
-            alert("Lỗi: " + err.message);
+            await showAlert("Lỗi: " + err.message, 'Lỗi', '❌');
         }
     });
 }
 
 window.deleteLesson = async function(id) {
-    if (!confirm('Bạn có chắc chắn muốn xóa bài học này không?')) return;
+    const isConfirmed = await showConfirm('Bạn có chắc chắn muốn xóa bài học này không?', 'Xác nhận xóa bài học', '🗑️');
+    if (!isConfirmed) return;
     try {
         await deleteDoc(doc(db, "classroom_lessons", id));
-        alert('Xóa bài học thành công!');
+        await showAlert('Xóa bài học thành công!', 'Thành công', '✅');
     } catch (err) {
         console.error("Lỗi khi xóa bài học:", err);
-        alert("Lỗi: " + err.message);
+        await showAlert("Lỗi: " + err.message, 'Lỗi', '❌');
     }
 }
 
 // Logout Admin
 if (adminLogoutBtn) {
     adminLogoutBtn.addEventListener('click', async () => {
+        const isConfirmed = await showConfirm('Bạn có chắc chắn muốn đăng xuất khỏi trang quản trị?', 'Xác nhận đăng xuất', '🚪');
+        if (!isConfirmed) return;
         try {
             await signOut(auth);
-            alert('Đăng xuất Admin thành công!');
+            await showAlert('Đăng xuất Admin thành công!', 'Tạm biệt', '👋');
             window.location.href = 'index.html';
         } catch (error) {
             console.error("Lỗi đăng xuất:", error);

@@ -21,6 +21,11 @@ import {
     setDoc,
     onSnapshot
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+import { showAlert, showConfirm } from "./modals.js";
+
+// Bind custom modals to window so inline onclick handlers can call them
+window.showAlert = showAlert;
+window.showConfirm = showConfirm;
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
@@ -145,11 +150,11 @@ if (loginForm) {
 
         try {
             const userCredential = await signInWithEmailAndPassword(auth, email, password);
-            alert(`Đăng nhập thành công! Xin chào ${userCredential.user.displayName || email}`);
+            await showAlert(`Đăng nhập thành công! Xin chào ${userCredential.user.displayName || email}`, 'Đăng nhập thành công', '🎉');
             window.closeModal();
         } catch (error) {
             console.error("Lỗi đăng nhập:", error);
-            alert(`Lỗi đăng nhập: ${translateError(error.code)}`);
+            await showAlert(`Lỗi đăng nhập: ${translateError(error.code)}`, 'Lỗi đăng nhập', '❌');
         }
     });
 }
@@ -178,11 +183,11 @@ if (registerForm) {
                 createdAt: serverTimestamp()
             });
 
-            alert('Đăng ký tài khoản thành công! Hệ thống đã tự động đăng nhập.');
+            await showAlert('Đăng ký tài khoản thành công! Hệ thống đã tự động đăng nhập.', 'Thành công', '✨');
             window.closeModal();
         } catch (error) {
             console.error("Lỗi đăng ký:", error);
-            alert(`Lỗi đăng ký: ${translateError(error.code)}`);
+            await showAlert(`Lỗi đăng ký: ${translateError(error.code)}`, 'Lỗi đăng ký', '❌');
         }
     });
 }
@@ -206,11 +211,11 @@ googleButtons.forEach(btn => {
                 createdAt: serverTimestamp()
             }, { merge: true });
 
-            alert(`Đăng nhập bằng Google thành công! Xin chào ${user.displayName}`);
+            await showAlert(`Đăng nhập bằng Google thành công! Xin chào ${user.displayName}`, 'Đăng nhập thành công', '🎉');
             window.closeModal();
         } catch (error) {
             console.error("Lỗi đăng nhập Google:", error);
-            alert(`Lỗi đăng nhập Google: ${translateError(error.code)}`);
+            await showAlert(`Lỗi đăng nhập Google: ${translateError(error.code)}`, 'Lỗi Google Sign-In', '❌');
         }
     });
 });
@@ -218,8 +223,8 @@ googleButtons.forEach(btn => {
 // 4. Social login - Facebook Sign-In (Mockup notification for full production compliance)
 const facebookButtons = document.querySelectorAll('.facebook-btn');
 facebookButtons.forEach(btn => {
-    btn.addEventListener('click', () => {
-        alert('Tính năng đăng nhập Facebook đang được bảo trì. Vui lòng sử dụng Đăng nhập bằng Email hoặc Google!');
+    btn.addEventListener('click', async () => {
+        await showAlert('Tính năng đăng nhập Facebook đang được bảo trì. Vui lòng sử dụng Đăng nhập bằng Email hoặc Google!', 'Đang bảo trì', 'ℹ️');
     });
 });
 
@@ -236,11 +241,11 @@ if (enrollForm) {
                 email: email,
                 createdAt: serverTimestamp()
             });
-            alert(`Đăng ký nhận ưu đãi thành công cho email: ${email}. Hãy kiểm tra hòm thư của bạn sớm nhé!`);
+            await showAlert(`Đăng ký nhận ưu đãi thành công cho email: ${email}. Hãy kiểm tra hòm thư của bạn sớm nhé!`, 'Đăng ký thành công', '🎁');
             enrollForm.reset();
         } catch (error) {
             console.error("Lỗi lưu email nhận ưu đãi:", error);
-            alert(`Có lỗi xảy ra khi đăng ký: ${error.message}`);
+            await showAlert(`Có lỗi xảy ra khi đăng ký: ${error.message}`, 'Lỗi đăng ký', '❌');
         }
     });
 }
@@ -392,12 +397,14 @@ onAuthStateChanged(auth, (user) => {
 // 7. Handle Sign Out Button
 if (logoutBtn) {
     logoutBtn.addEventListener('click', async () => {
+        const isConfirmed = await showConfirm('Bạn có chắc chắn muốn đăng xuất khỏi tài khoản?', 'Xác nhận đăng xuất', '🚪');
+        if (!isConfirmed) return;
         try {
             await signOut(auth);
-            alert('Đăng xuất thành công!');
+            await showAlert('Đăng xuất thành công!', 'Tạm biệt', '👋');
         } catch (error) {
             console.error("Lỗi đăng xuất:", error);
-            alert(`Lỗi đăng xuất: ${error.message}`);
+            await showAlert(`Lỗi đăng xuất: ${error.message}`, 'Lỗi', '❌');
         }
     });
 }
@@ -456,13 +463,13 @@ function renderCoursesUI() {
         let onclickAction = `switchStudentTab('classroom')`;
 
         if (course.id === 'english') {
-            onclickAction = `alert('Đang tải nội dung khóa học...')`;
+            onclickAction = `showAlert('Đang tải nội dung khóa học...', 'Thông báo', 'ℹ️')`;
         }
 
         if (!hasAccess) {
             btnClass = 'btn btn-outline';
             btnText = 'Liên Hệ Admin';
-            onclickAction = `alert('Khóa học "${course.title}" chưa được cấp quyền bởi quản trị viên. Vui lòng liên hệ Admin để kích hoạt!')`;
+            onclickAction = `showAlert('Khóa học &ldquo;${course.title}&rdquo; chưa được cấp quyền bởi quản trị viên. Vui lòng liên hệ Admin để kích hoạt!', 'Khóa học chưa kích hoạt', '🔒')`;
         }
 
         const badgeText = hasAccess ? (course.badge || 'Đang học') : '🔒 Chưa Cấp';
@@ -538,7 +545,7 @@ function loadStudentDocsRealtime() {
                     <h4>${data.name}</h4>
                     <span>${data.type} • ${data.size} • Đã tải lên</span>
                 </div>
-                <button class="btn btn-outline btn-sm" onclick="alert('Bắt đầu tải xuống tài liệu: ${data.name}')">📥 Tải Xuống</button>
+                <button class="btn btn-outline btn-sm" onclick="showAlert('Bắt đầu tải xuống tài liệu: ${data.name}', 'Đang tải xuống', '📥')">📥 Tải Xuống</button>
             `;
             docsList.appendChild(item);
         });

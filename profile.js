@@ -11,6 +11,7 @@ import {
     addDoc,
     serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+import { showAlert, showConfirm } from "./modals.js";
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
@@ -44,7 +45,7 @@ const editPhotoUrl = document.getElementById('editPhotoUrl');
 
 let currentUser = null;
 
-onAuthStateChanged(auth, (user) => {
+onAuthStateChanged(auth, async (user) => {
     if (user) {
         currentUser = user;
         
@@ -63,7 +64,7 @@ onAuthStateChanged(auth, (user) => {
         updateAvatarDisplay(user);
     } else {
         // Not logged in, redirect to home
-        alert('Vui lòng đăng nhập trước khi xem trang hồ sơ!');
+        await showAlert('Vui lòng đăng nhập trước khi xem trang hồ sơ!', 'Yêu cầu đăng nhập', '🔒');
         window.location.href = 'index.html';
     }
 });
@@ -104,14 +105,14 @@ if (profileEditForm) {
                 timestamp: serverTimestamp()
             });
             
-            alert('Cập nhật hồ sơ thành công!');
+            await showAlert('Cập nhật hồ sơ thành công!', 'Thành công', '✅');
             
             // Live reload overview
             profileDisplayName.textContent = newName;
             updateAvatarDisplay(currentUser);
         } catch (error) {
             console.error("Lỗi cập nhật hồ sơ:", error);
-            alert(`Không thể cập nhật hồ sơ: ${error.message}`);
+            await showAlert(`Không thể cập nhật hồ sơ: ${error.message}`, 'Lỗi cập nhật', '❌');
         }
     });
 }
@@ -119,16 +120,16 @@ if (profileEditForm) {
 // Logout button
 if (profileLogoutBtn) {
     profileLogoutBtn.addEventListener('click', async () => {
-        const confirmLogout = confirm("Bạn có chắc chắn muốn đăng xuất khỏi tài khoản?");
+        const confirmLogout = await showConfirm("Bạn có chắc chắn muốn đăng xuất khỏi tài khoản?", "Xác nhận đăng xuất", "🚪");
         if (!confirmLogout) return;
 
         try {
             await signOut(auth);
-            alert('Đăng xuất thành công!');
+            await showAlert('Đăng xuất thành công!', 'Tạm biệt', '👋');
             window.location.href = 'index.html';
         } catch (error) {
             console.error("Lỗi đăng xuất:", error);
-            alert(`Lỗi đăng xuất: ${error.message}`);
+            await showAlert(`Lỗi đăng xuất: ${error.message}`, 'Lỗi', '❌');
         }
     });
 }
