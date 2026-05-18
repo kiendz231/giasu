@@ -48,10 +48,13 @@
 
         <!-- Main Workspace: Tabs -->
         <section class="admin-workspace glass-card">
-            <div class="admin-tabs">
-                <button class="admin-tab-btn active" onclick="switchAdminTab('users')" id="tab-users">👤 Quản Lý Học Viên</button>
-                <button class="admin-tab-btn" onclick="switchAdminTab('leads')" id="tab-leads">✉️ Khách Nhận Ưu Đãi (Leads)</button>
-                <button class="admin-tab-btn" onclick="switchAdminTab('updates')" id="tab-updates">📝 Nhật Ký Hoạt Động</button>
+            <div class="admin-tabs" style="display: flex; flex-wrap: wrap; gap: 8px;">
+                <button class="admin-tab-btn active" onclick="switchAdminTab('users')" id="tab-users">👤 Học Viên</button>
+                <button class="admin-tab-btn" onclick="switchAdminTab('leads')" id="tab-leads">✉️ Leads</button>
+                <button class="admin-tab-btn" onclick="switchAdminTab('updates')" id="tab-updates">📝 Nhật Ký</button>
+                <button class="admin-tab-btn" onclick="switchAdminTab('manage-courses')" id="tab-manage-courses">📚 QL Khóa Học</button>
+                <button class="admin-tab-btn" onclick="switchAdminTab('manage-docs')" id="tab-manage-docs">📁 QL Tài Liệu</button>
+                <button class="admin-tab-btn" onclick="switchAdminTab('manage-classroom')" id="tab-manage-classroom">📺 QL Phòng Học</button>
             </div>
 
             <!-- Content Area 1: Users -->
@@ -127,6 +130,203 @@
                             </tr>
                         </tbody>
                     </table>
+                </div>
+            </div>
+
+            <!-- Content Area 4: Manage Courses -->
+            <div class="admin-tab-content" id="content-manage-courses">
+                <div class="admin-split-layout" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 30px;">
+                    <!-- Create Form -->
+                    <div class="admin-form-box" style="background: rgba(15, 23, 42, 0.02); padding: 24px; border-radius: 16px; border: 1.5px solid rgba(15, 23, 42, 0.05);">
+                        <h4 style="margin-bottom: 20px; font-weight: 700;">➕ Tạo Khóa Học Mới</h4>
+                        <form id="form-create-course" style="display: flex; flex-direction: column; gap: 15px;">
+                            <div>
+                                <label style="display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px;">Tiêu Đề Khóa Học</label>
+                                <input type="text" id="course-title" required class="input-glass" placeholder="Ví dụ: Lập Trình ReactJS" style="width: 100%; padding: 10px; border-radius: 8px;">
+                            </div>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                                <div>
+                                    <label style="display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px;">Biểu Tượng (Emoji)</label>
+                                    <input type="text" id="course-icon" required class="input-glass" placeholder="💻 hoặc ⚛️" style="width: 100%; padding: 10px; border-radius: 8px;">
+                                </div>
+                                <div>
+                                    <label style="display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px;">Huy Hiệu (Badge)</label>
+                                    <input type="text" id="course-badge" required class="input-glass" placeholder="Đang học hoặc Mới" style="width: 100%; padding: 10px; border-radius: 8px;">
+                                </div>
+                            </div>
+                            <div>
+                                <label style="display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px;">Màu Nền (Gradient Class)</label>
+                                <select id="course-gradient" class="input-glass" style="width: 100%; padding: 10px; border-radius: 8px; background: white;">
+                                    <option value="gradient-blue">Xanh Dương (gradient-blue)</option>
+                                    <option value="gradient-green">Xanh Lá (gradient-green)</option>
+                                    <option value="gradient-purple">Tím (gradient-purple)</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label style="display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px;">Tiến Độ Mặc Định (%)</label>
+                                <input type="number" id="course-progress" required class="input-glass" value="0" min="0" max="100" style="width: 100%; padding: 10px; border-radius: 8px;">
+                            </div>
+                            <div>
+                                <label style="display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px;">Mô Tả Ngắn</label>
+                                <textarea id="course-desc" required class="input-glass" placeholder="Mô tả tóm tắt nội dung khóa học..." style="width: 100%; padding: 10px; border-radius: 8px; min-height: 80px; resize: vertical;"></textarea>
+                            </div>
+                            <button type="submit" class="btn btn-primary" style="width: 100%; border-radius: 8px; padding: 12px;">Tạo Khóa Học Mới</button>
+                        </form>
+                    </div>
+                    <!-- Course List -->
+                    <div>
+                        <div class="table-header">
+                            <h4>Các khóa học hiện tại</h4>
+                            <span class="table-count" id="count-courses">0 khóa học</span>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="admin-table">
+                                <thead>
+                                    <tr>
+                                        <th>Khóa Học</th>
+                                        <th>Mô Tả</th>
+                                        <th>Hành Động</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="courses-list-body">
+                                    <tr>
+                                        <td colspan="3" class="table-loading">Đang tải dữ liệu...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Content Area 5: Manage Docs -->
+            <div class="admin-tab-content" id="content-manage-docs">
+                <div class="admin-split-layout" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 30px;">
+                    <!-- Add Form -->
+                    <div class="admin-form-box" style="background: rgba(15, 23, 42, 0.02); padding: 24px; border-radius: 16px; border: 1.5px solid rgba(15, 23, 42, 0.05);">
+                        <h4 style="margin-bottom: 20px; font-weight: 700;">➕ Thêm Tài Liệu Mới</h4>
+                        <form id="form-add-doc" style="display: flex; flex-direction: column; gap: 15px;">
+                            <div>
+                                <label style="display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px;">Tên Tài Liệu</label>
+                                <input type="text" id="doc-name" required class="input-glass" placeholder="Ví dụ: Giáo trình Javascript Nâng Cao.pdf" style="width: 100%; padding: 10px; border-radius: 8px;">
+                            </div>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                                <div>
+                                    <label style="display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px;">Định Dạng (Type)</label>
+                                    <input type="text" id="doc-type" required class="input-glass" placeholder="PDF, DOCX, PPTX" style="width: 100%; padding: 10px; border-radius: 8px;">
+                                </div>
+                                <div>
+                                    <label style="display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px;">Dung Lượng (Size)</label>
+                                    <input type="text" id="doc-size" required class="input-glass" placeholder="15.4 MB" style="width: 100%; padding: 10px; border-radius: 8px;">
+                                </div>
+                            </div>
+                            <div>
+                                <label style="display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px;">Biểu Tượng (Emoji Icon)</label>
+                                <input type="text" id="doc-icon" required class="input-glass" value="📄" style="width: 100%; padding: 10px; border-radius: 8px;">
+                            </div>
+                            <button type="submit" class="btn btn-primary" style="width: 100%; border-radius: 8px; padding: 12px;">Thêm Tài Liệu Mới</button>
+                        </form>
+                    </div>
+                    <!-- Docs List -->
+                    <div>
+                        <div class="table-header">
+                            <h4>Các tài liệu hiện có</h4>
+                            <span class="table-count" id="count-docs">0 tài liệu</span>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="admin-table">
+                                <thead>
+                                    <tr>
+                                        <th>Tên Tài Liệu</th>
+                                        <th>Định Dạng</th>
+                                        <th>Hành Động</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="docs-list-body">
+                                    <tr>
+                                        <td colspan="3" class="table-loading">Đang tải dữ liệu...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Content Area 6: Manage Classroom -->
+            <div class="admin-tab-content" id="content-manage-classroom">
+                <div style="display: flex; flex-direction: column; gap: 30px;">
+                    <!-- Top Section: Stream config -->
+                    <div class="admin-form-box" style="background: rgba(15, 23, 42, 0.02); padding: 24px; border-radius: 16px; border: 1.5px solid rgba(15, 23, 42, 0.05);">
+                        <h4 style="margin-bottom: 20px; font-weight: 700;">📺 Cấu Hình Phòng Học Trực Tuyến</h4>
+                        <form id="form-config-live" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; align-items: flex-end;">
+                            <div>
+                                <label style="display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px;">Tiêu Đề Bài Giảng Live</label>
+                                <input type="text" id="live-title" required class="input-glass" placeholder="Bài 2: Làm chủ CSS Grid & Responsive Layout" style="width: 100%; padding: 10px; border-radius: 8px;">
+                            </div>
+                            <div>
+                                <label style="display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px;">Gia Sư Giảng Dạy</label>
+                                <input type="text" id="live-instructor" required class="input-glass" placeholder="Gia sư Võ Anh Kiệt" style="width: 100%; padding: 10px; border-radius: 8px;">
+                            </div>
+                            <div>
+                                <label style="display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px;">Số Lượng Học Viên Xem</label>
+                                <input type="number" id="live-viewers" required class="input-glass" placeholder="42" style="width: 100%; padding: 10px; border-radius: 8px;">
+                            </div>
+                            <button type="submit" class="btn btn-primary" style="border-radius: 8px; padding: 12px; height: 42px;">Lưu Thay Đổi</button>
+                        </form>
+                    </div>
+
+                    <!-- Split Section: Add Lesson and Lesson List -->
+                    <div class="admin-split-layout" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 30px;">
+                        <!-- Add Lesson Form -->
+                        <div class="admin-form-box" style="background: rgba(15, 23, 42, 0.02); padding: 24px; border-radius: 16px; border: 1.5px solid rgba(15, 23, 42, 0.05);">
+                            <h4 style="margin-bottom: 20px; font-weight: 700;">➕ Thêm Bài Học Mới</h4>
+                            <form id="form-add-lesson" style="display: flex; flex-direction: column; gap: 15px;">
+                                <div>
+                                    <label style="display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px;">Tiêu Đề Bài Học</label>
+                                    <input type="text" id="lesson-title" required class="input-glass" placeholder="Ví dụ: Bài 3: DOM Manipulation" style="width: 100%; padding: 10px; border-radius: 8px;">
+                                </div>
+                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                                    <div>
+                                        <label style="display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px;">Thời Lượng</label>
+                                        <input type="text" id="lesson-duration" required class="input-glass" placeholder="45 phút" style="width: 100%; padding: 10px; border-radius: 8px;">
+                                    </div>
+                                    <div>
+                                        <label style="display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px;">Trạng Thái</label>
+                                        <select id="lesson-status" class="input-glass" style="width: 100%; padding: 10px; border-radius: 8px; background: white;">
+                                            <option value="completed">Đã Hoàn Thành (completed)</option>
+                                            <option value="active">Đang Học Live (active)</option>
+                                            <option value="locked">Chưa Mở Khóa (locked)</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <button type="submit" class="btn btn-primary" style="width: 100%; border-radius: 8px; padding: 12px;">Thêm Bài Học Mới</button>
+                            </form>
+                        </div>
+                        <!-- Lessons Playlist Table -->
+                        <div>
+                            <div class="table-header">
+                                <h4>Danh sách bài học</h4>
+                                <span class="table-count" id="count-lessons">0 bài học</span>
+                            </div>
+                            <div class="table-responsive">
+                                <table class="admin-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Bài Học</th>
+                                            <th>Độ Dài & Trạng Thái</th>
+                                            <th>Hành Động</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="lessons-list-body">
+                                        <tr>
+                                            <td colspan="3" class="table-loading">Đang tải dữ liệu...</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </section>

@@ -122,61 +122,8 @@
                 <h2>Khóa Học Của Tôi</h2>
                 <p>Tiếp tục hành trình chinh phục kiến thức mới</p>
             </div>
-            <div class="courses-grid">
-                <div class="course-card glass-card" id="courseCard-web">
-                    <div class="course-badge" id="courseBadge-web">Đang học</div>
-                    <div class="course-header-bg gradient-blue">💻</div>
-                    <div class="course-body">
-                        <h3>Lập Trình Web Thực Chiến</h3>
-                        <p class="course-desc">Làm chủ HTML, CSS, JavaScript và phát triển ứng dụng Web hoàn chỉnh.</p>
-                        <div class="course-progress-container">
-                            <div class="progress-info">
-                                <span>Tiến độ: 80%</span>
-                                <span>24/30 bài học</span>
-                            </div>
-                            <div class="progress-bar">
-                                <div class="progress-fill" style="width: 80%;"></div>
-                            </div>
-                        </div>
-                        <button class="btn btn-primary" id="courseBtn-web" style="width: 100%; border-radius: 12px;" onclick="switchStudentTab('classroom')">Tiếp Tục Học</button>
-                    </div>
-                </div>
-                <div class="course-card glass-card" id="courseCard-english">
-                    <div class="course-badge" id="courseBadge-english">Đang học</div>
-                    <div class="course-header-bg gradient-green">🇬🇧</div>
-                    <div class="course-body">
-                        <h3>Chinh Phục Tiếng Anh Giao Tiếp</h3>
-                        <p class="course-desc">Luyện nói phản xạ, tự tin giao tiếp với gia sư nước ngoài và chuyên gia.</p>
-                        <div class="course-progress-container">
-                            <div class="progress-info">
-                                <span>Tiến độ: 45%</span>
-                                <span>14/30 bài học</span>
-                            </div>
-                            <div class="progress-bar">
-                                <div class="progress-fill" style="width: 45%; background: #10b981;"></div>
-                            </div>
-                        </div>
-                        <button class="btn btn-primary" id="courseBtn-english" style="width: 100%; border-radius: 12px;" onclick="alert('Đang tải nội dung khóa học...')">Tiếp Tục Học</button>
-                    </div>
-                </div>
-                <div class="course-card glass-card" id="courseCard-math">
-                    <div class="course-badge badge-new" id="courseBadge-math">Mới</div>
-                    <div class="course-header-bg gradient-purple">📐</div>
-                    <div class="course-body">
-                        <h3>Toán Cao Cấp Đại Cương</h3>
-                        <p class="course-desc">Ôn thi học phần Toán cao cấp, giải đề thực chiến đạt điểm A+.</p>
-                        <div class="course-progress-container">
-                            <div class="progress-info">
-                                <span>Tiến độ: 0%</span>
-                                <span>0/20 bài học</span>
-                            </div>
-                            <div class="progress-bar">
-                                <div class="progress-fill" style="width: 0%;"></div>
-                            </div>
-                        </div>
-                        <button class="btn btn-outline" id="courseBtn-math" style="width: 100%; border-radius: 12px;" onclick="alert('Đang tải nội dung khóa học...')">Bắt Đầu Học</button>
-                    </div>
-                </div>
+            <div class="courses-grid" id="coursesGridDynamic">
+                <div class="table-loading" style="padding: 30px; text-align: center; grid-column: 1/-1;">Đang tải khóa học...</div>
             </div>
         </div>
 
@@ -186,31 +133,8 @@
                 <h2>Kho Tài Liệu Học Tập</h2>
                 <p>Tải xuống tài liệu, slide bài giảng và bài tập thực hành</p>
             </div>
-            <div class="docs-list glass-card">
-                <div class="doc-item">
-                    <div class="doc-icon">📄</div>
-                    <div class="doc-details">
-                        <h4>Ebook - Cẩm nang Javascript từ cơ bản đến nâng cao.pdf</h4>
-                        <span>PDF • 15.4 MB • Được tải lên 2 ngày trước</span>
-                    </div>
-                    <button class="btn btn-outline btn-sm" onclick="alert('Bắt đầu tải xuống: Ebook - Cẩm nang Javascript.pdf')">📥 Tải Xuống</button>
-                </div>
-                <div class="doc-item">
-                    <div class="doc-icon">📝</div>
-                    <div class="doc-details">
-                        <h4>Tài liệu ôn thi cuối kỳ môn Toán Đại Cương.docx</h4>
-                        <span>DOCX • 2.1 MB • Được tải lên 5 ngày trước</span>
-                    </div>
-                    <button class="btn btn-outline btn-sm" onclick="alert('Bắt đầu tải xuống: Tài liệu ôn thi Toán Đại Cương.docx')">📥 Tải Xuống</button>
-                </div>
-                <div class="doc-item">
-                    <div class="doc-icon">📊</div>
-                    <div class="doc-details">
-                        <h4>Slide bài giảng - Thiết kế Responsive & CSS Grid nâng cao.pptx</h4>
-                        <span>PPTX • 8.7 MB • Được tải lên 1 tuần trước</span>
-                    </div>
-                    <button class="btn btn-outline btn-sm" onclick="alert('Bắt đầu tải xuống: Slide Thiết kế Responsive.pptx')">📥 Tải Xuống</button>
-                </div>
+            <div class="docs-list glass-card" id="docsListDynamic">
+                <div class="table-loading" style="padding: 30px; text-align: center;">Đang tải tài liệu học tập...</div>
             </div>
         </div>
 
@@ -222,49 +146,14 @@
             </div>
             <div class="classroom-layout">
                 <!-- Video player area -->
-                <div class="classroom-video glass-card">
-                    <div class="video-placeholder">
-                        <div class="play-btn-pulse">▶</div>
-                        <h3>Bài 2: Làm chủ CSS Grid & Responsive Layout</h3>
-                        <p>Đang trực tiếp cùng Gia sư Võ Anh Kiệt</p>
-                    </div>
-                    <div class="video-controls">
-                        <span>🔴 ĐANG HỌC TRỰC TUYẾN</span>
-                        <span>Đang xem: 42 học viên</span>
-                    </div>
+                <div class="classroom-video glass-card" id="classroomVideoDynamic">
+                    <div class="table-loading" style="padding: 30px; text-align: center; color: white;">Đang tải phòng học...</div>
                 </div>
                 <!-- Lessons playlist sidebar -->
                 <div class="classroom-sidebar glass-card">
                     <h3>Danh Sách Bài Học</h3>
-                    <div class="lesson-list">
-                        <div class="lesson-item completed">
-                            <span class="lesson-status">✅</span>
-                            <div class="lesson-info">
-                                <h5>Bài 1: Tổng quan về Web & Cú pháp cơ bản</h5>
-                                <span>35 phút • Đã hoàn thành</span>
-                            </div>
-                        </div>
-                        <div class="lesson-item active">
-                            <span class="lesson-status">🎬</span>
-                            <div class="lesson-info">
-                                <h5>Bài 2: Làm chủ CSS Grid & Responsive Layout</h5>
-                                <span>45 phút • Đang học trực tiếp</span>
-                            </div>
-                        </div>
-                        <div class="lesson-item locked">
-                            <span class="lesson-status">🔒</span>
-                            <div class="lesson-info">
-                                <h5>Bài 3: DOM Manipulation và Sự kiện trong JS</h5>
-                                <span>40 phút • Chưa mở khóa</span>
-                            </div>
-                        </div>
-                        <div class="lesson-item locked">
-                            <span class="lesson-status">🔒</span>
-                            <div class="lesson-info">
-                                <h5>Bài 4: Tích hợp cơ sở dữ liệu Firebase Firestore</h5>
-                                <span>50 phút • Chưa mở khóa</span>
-                            </div>
-                        </div>
+                    <div class="lesson-list" id="lessonListDynamic">
+                        <div class="table-loading" style="padding: 30px; text-align: center;">Đang tải danh sách bài học...</div>
                     </div>
                 </div>
             </div>

@@ -16,7 +16,8 @@ import {
     addDoc, 
     serverTimestamp,
     doc,
-    getDoc
+    getDoc,
+    getDocs
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
 // Your web app's Firebase configuration
@@ -338,7 +339,7 @@ onAuthStateChanged(auth, (user) => {
         if (currentUserPlaceholder) currentUserPlaceholder.textContent = (user.displayName || user.email).charAt(0).toUpperCase();
 
         switchStudentTab('courses');
-        loadStudentCourses(user.uid);
+        loadStudentDashboardData(user.uid);
 
     } else {
         // User is signed out.
@@ -400,79 +401,192 @@ window.toggleMenu = function() {
     }
 }
 
-// 9. Load Student Courses and Dynamic Locking UI
-async function loadStudentCourses(uid) {
+// 9. Load Student Dashboard Data & Dynamic Sync
+async function loadStudentDashboardData(uid) {
     try {
-        const docRef = doc(db, "student_courses", uid);
-        const docSnap = await getDoc(docRef);
-        
-        let webAccess = false;
-        let englishAccess = false;
-        let mathAccess = false;
-
-        if (docSnap.exists()) {
-            const data = docSnap.data();
-            webAccess = !!data.web;
-            englishAccess = !!data.english;
-            mathAccess = !!data.math;
-        }
-
-        // Update Web Card UI
-        updateCourseCardUI('web', webAccess, 'Lập Trình Web Thực Chiến', "switchStudentTab('classroom')");
-        
-        // Update English Card UI
-        updateCourseCardUI('english', englishAccess, 'Chinh Phục Tiếng Anh Giao Tiếp', "alert('Đang tải nội dung khóa học...')");
-        
-        // Update Math Card UI
-        updateCourseCardUI('math', mathAccess, 'Toán Cao Cấp Đại Cương', "alert('Đang tải nội dung khóa học...')");
-
-    } catch (error) {
-        console.error("Lỗi khi tải thông tin khóa học được cấp:", error);
+        await Promise.all([
+            loadStudentCourses(uid),
+            loadStudentDocs(),
+            loadStudentClassroom()
+        ]);
+    } catch (err) {
+        console.error("Lỗi khi tải dữ liệu Dashboard học viên:", err);
     }
 }
 
-function updateCourseCardUI(courseKey, hasAccess, courseTitle, originalOnclick) {
-    const card = document.getElementById(`courseCard-${courseKey}`);
-    const badge = document.getElementById(`courseBadge-${courseKey}`);
-    const btn = document.getElementById(`courseBtn-${courseKey}`);
+async function loadStudentCourses(uid) {
+    const grid = document.getElementById('coursesGridDynamic');
+    if (!grid) return;
 
-    if (!card || !badge || !btn) return;
+    try {
+        const coursesSnap = await getDocs(collection(db, "courses"));
+        const coursesList = [];
+        coursesSnap.forEach(docSnap => {
+            coursesList.push({ id: docSnap.id, ...docSnap.data() });
+        });
 
-    if (hasAccess) {
-        // Unlocked state
-        card.style.opacity = '1';
-        card.style.filter = 'none';
-        
-        if (courseKey === 'math') {
-            badge.className = 'course-badge badge-new';
-            badge.textContent = 'Mới';
-            badge.style.background = ''; // reset to default CSS style
-            btn.className = 'btn btn-outline';
-            btn.textContent = 'Bắt Đầu Học';
-        } else {
-            badge.className = 'course-badge';
-            badge.textContent = 'Đang học';
-            badge.style.background = ''; // reset
-            btn.className = 'btn btn-primary';
-            btn.textContent = 'Tiếp Tục Học';
+        const docSnap = await getDoc(doc(db, "student_courses", uid));
+        const permissions = docSnap.exists() ? docSnap.data() : {};
+
+        if (coursesList.length === 0) {
+            grid.innerHTML = `<div style="padding: 30px; text-align: center; color: #64748b; grid-column: 1/-1;">Hiện chưa có khóa học nào được phát hành.</div>`;
+            return;
         }
-        
-        btn.disabled = false;
-        btn.setAttribute('onclick', originalOnclick);
-    } else {
-        // Locked state
-        card.style.opacity = '0.7';
-        card.style.filter = 'grayscale(0.3)';
-        
-        badge.className = 'course-badge';
-        badge.style.background = '#64748b'; // gray
-        badge.textContent = '🔒 Chưa Cấp';
-        
-        btn.className = 'btn btn-outline';
-        btn.style.borderColor = '#94a3b8';
-        btn.style.color = '#64748b';
-        btn.textContent = 'Liên Hệ Admin';
-        btn.disabled = false;
-        btn.setAttribute('onclick', `alert('Khóa học "${courseTitle}" chưa được cấp quyền bởi quản trị viên. Vui lòng liên hệ Admin để kích hoạt!')`);
+
+        grid.innerHTML = '';
+        coursesList.forEach(course => {
+            const hasAccess = !!permissions[course.id];
+            const card = document.createElement('div');
+            card.className = 'course-card glass-card';
+            card.id = `courseCard-${course.id}`;
+
+            const gradientClass = course.gradient || 'gradient-blue';
+
+            // Apply style if locked
+            if (!hasAccess) {
+                card.style.opacity = '0.7';
+                card.style.filter = 'grayscale(0.3)';
+            }
+
+            // Setup dynamic buttons
+            let btnClass = course.id === 'math' ? 'btn btn-outline' : 'btn btn-primary';
+            let btnText = course.id === 'math' ? 'Bắt Đầu Học' : 'Tiếp Tục Học';
+            let onclickAction = `switchStudentTab('classroom')`;
+
+            if (course.id === 'english') {
+                onclickAction = `alert('Đang tải nội dung khóa học...')`;
+            }
+
+            if (!hasAccess) {
+                btnClass = 'btn btn-outline';
+                btnText = 'Liên Hệ Admin';
+                onclickAction = `alert('Khóa học "${course.title}" chưa được cấp quyền bởi quản trị viên. Vui lòng liên hệ Admin để kích hoạt!')`;
+            }
+
+            const badgeText = hasAccess ? (course.badge || 'Đang học') : '🔒 Chưa Cấp';
+            const badgeStyle = hasAccess ? '' : 'style="background: #64748b;"';
+
+            card.innerHTML = `
+                <div class="course-badge" ${badgeStyle}>${badgeText}</div>
+                <div class="course-header-bg ${gradientClass}">${course.icon || '💻'}</div>
+                <div class="course-body">
+                    <h3>${course.title}</h3>
+                    <p class="course-desc">${course.description}</p>
+                    <div class="course-progress-container">
+                        <div class="progress-info">
+                            <span>Tiến độ: ${course.progress || 0}%</span>
+                            <span>${hasAccess ? 'Đang cập nhật' : 'Chưa bắt đầu'}</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: ${course.progress || 0}%; ${gradientClass === 'gradient-green' ? 'background: #10b981;' : ''}"></div>
+                        </div>
+                    </div>
+                    <button class="${btnClass}" style="width: 100%; border-radius: 12px; ${!hasAccess ? 'border-color: #94a3b8; color: #64748b;' : ''}" onclick="${onclickAction}">${btnText}</button>
+                </div>
+            `;
+            grid.appendChild(card);
+        });
+    } catch (err) {
+        console.error("Lỗi loadStudentCourses:", err);
+        grid.innerHTML = `<div style="padding: 30px; text-align: center; color: #ef4444; grid-column: 1/-1;">Lỗi khi tải danh sách khóa học.</div>`;
+    }
+}
+
+async function loadStudentDocs() {
+    const docsList = document.getElementById('docsListDynamic');
+    if (!docsList) return;
+
+    try {
+        const snapshot = await getDocs(collection(db, "documents"));
+        if (snapshot.empty) {
+            docsList.innerHTML = `<div style="padding: 30px; text-align: center; color: #64748b;">Chưa có tài liệu học tập nào được tải lên.</div>`;
+            return;
+        }
+
+        docsList.innerHTML = '';
+        snapshot.forEach(docSnap => {
+            const data = docSnap.data();
+            const item = document.createElement('div');
+            item.className = 'doc-item';
+            item.innerHTML = `
+                <div class="doc-icon">${data.icon || '📄'}</div>
+                <div class="doc-details">
+                    <h4>${data.name}</h4>
+                    <span>${data.type} • ${data.size} • Đã tải lên</span>
+                </div>
+                <button class="btn btn-outline btn-sm" onclick="alert('Bắt đầu tải xuống tài liệu: ${data.name}')">📥 Tải Xuống</button>
+            `;
+            docsList.appendChild(item);
+        });
+    } catch (err) {
+        console.error("Lỗi loadStudentDocs:", err);
+        docsList.innerHTML = `<div style="padding: 30px; text-align: center; color: #ef4444;">Lỗi khi tải tài liệu học tập.</div>`;
+    }
+}
+
+async function loadStudentClassroom() {
+    const videoArea = document.getElementById('classroomVideoDynamic');
+    const playlist = document.getElementById('lessonListDynamic');
+
+    try {
+        if (videoArea) {
+            const liveSnap = await getDoc(doc(db, "classroom", "live"));
+            if (liveSnap.exists()) {
+                const data = liveSnap.data();
+                videoArea.innerHTML = `
+                    <div class="video-placeholder">
+                        <div class="play-btn-pulse">▶</div>
+                        <h3>${data.title}</h3>
+                        <p>Đang trực tiếp cùng ${data.instructor}</p>
+                    </div>
+                    <div class="video-controls">
+                        <span>🔴 ĐANG HỌC TRỰC TUYẾN</span>
+                        <span>Đang xem: ${data.viewers} học viên</span>
+                    </div>
+                `;
+            } else {
+                videoArea.innerHTML = `<div style="padding: 30px; text-align: center; color: white;">Không có lớp học live nào đang diễn ra.</div>`;
+            }
+        }
+
+        if (playlist) {
+            const snapshot = await getDocs(collection(db, "classroom_lessons"));
+            if (snapshot.empty) {
+                playlist.innerHTML = `<div style="padding: 20px; text-align: center; color: #64748b;">Chưa có bài học nào trong danh sách phát.</div>`;
+                return;
+            }
+
+            playlist.innerHTML = '';
+            snapshot.forEach(docSnap => {
+                const data = docSnap.data();
+                const item = document.createElement('div');
+
+                let statusClass = 'locked';
+                let statusIcon = '🔒';
+                let statusText = 'Chưa mở khóa';
+
+                if (data.status === 'completed') {
+                    statusClass = 'completed';
+                    statusIcon = '✅';
+                    statusText = 'Đã hoàn thành';
+                } else if (data.status === 'active') {
+                    statusClass = 'active';
+                    statusIcon = '🎬';
+                    statusText = 'Đang học trực tiếp';
+                }
+
+                item.className = `lesson-item ${statusClass}`;
+                item.innerHTML = `
+                    <span class="lesson-status">${statusIcon}</span>
+                    <div class="lesson-info">
+                        <h5>${data.title}</h5>
+                        <span>${data.duration} • ${statusText}</span>
+                    </div>
+                `;
+                playlist.appendChild(item);
+            });
+        }
+    } catch (err) {
+        console.error("Lỗi loadStudentClassroom:", err);
     }
 }
