@@ -253,6 +253,31 @@ const mobileRegister = document.getElementById('mobileRegister');
 
 const ADMIN_EMAILS = ['vokien609@gmail.com', 'admin@edubourbon.com', 'bourbon@edubourbon.com', 'admin@gmail.com'];
 
+const studentDashboard = document.getElementById('studentDashboard');
+const landingSections = document.querySelectorAll('.landing-section');
+
+// Student Panel Dynamic Tab Swapper
+window.switchStudentTab = function(tabId) {
+    const contents = document.querySelectorAll('.student-tab-content');
+    contents.forEach(content => content.classList.remove('active'));
+    
+    const selectedContent = document.getElementById(`tabContent-${tabId}`);
+    if (selectedContent) selectedContent.classList.add('active');
+    
+    const studentLinks = document.querySelectorAll('.student-nav-link');
+    studentLinks.forEach(link => {
+        if (link.getAttribute('data-tab') === tabId) {
+            link.classList.add('active');
+        } else {
+            link.classList.remove('active');
+        }
+    });
+
+    if (window.toggleMenu) {
+        window.toggleMenu();
+    }
+};
+
 onAuthStateChanged(auth, (user) => {
     if (user) {
         // User is signed in.
@@ -286,6 +311,32 @@ onAuthStateChanged(auth, (user) => {
         if (adminBtn) {
             adminBtn.style.display = isAdmin ? 'inline-block' : 'none';
         }
+
+        // SWAP TO STUDENT DASHBOARD
+        if (navLinks) {
+            navLinks.innerHTML = `
+                <li><a href="#" onclick="switchStudentTab('courses')" class="student-nav-link active" data-tab="courses">Khóa học của tôi</a></li>
+                <li><a href="#" onclick="switchStudentTab('docs')" class="student-nav-link" data-tab="docs">Tài liệu</a></li>
+                <li><a href="#" onclick="switchStudentTab('classroom')" class="student-nav-link" data-tab="classroom">Phòng học</a></li>
+                <li><a href="#" onclick="switchStudentTab('leaderboard')" class="student-nav-link" data-tab="leaderboard">Xếp hạng</a></li>
+            `;
+        }
+        
+        landingSections.forEach(el => el.style.display = 'none');
+        if (studentDashboard) {
+            studentDashboard.style.display = 'block';
+        }
+
+        // Update Dynamic Leaderboard User Data
+        const currentUserName = document.getElementById('currentUserRankName');
+        const currentUserEmail = document.getElementById('currentUserRankEmail');
+        const currentUserPlaceholder = document.getElementById('currentUserRankPlaceholder');
+        if (currentUserName) currentUserName.textContent = user.displayName || user.email.split('@')[0];
+        if (currentUserEmail) currentUserEmail.textContent = user.email;
+        if (currentUserPlaceholder) currentUserPlaceholder.textContent = (user.displayName || user.email).charAt(0).toUpperCase();
+
+        switchStudentTab('courses');
+
     } else {
         // User is signed out.
         if (authButtons) authButtons.style.display = 'flex';
@@ -295,6 +346,21 @@ onAuthStateChanged(auth, (user) => {
         // Show mobile dropdown login/register buttons
         if (mobileLogin) mobileLogin.style.display = 'block';
         if (mobileRegister) mobileRegister.style.display = 'block';
+
+        // SWAP TO PUBLIC LANDING
+        if (navLinks) {
+            navLinks.innerHTML = `
+                <li><a href="#about" onclick="toggleMenu()">Giới Thiệu</a></li>
+                <li><a href="#features" onclick="toggleMenu()">Lợi Ích</a></li>
+                <li class="mobile-only" id="mobileLogin"><a href="#" onclick="openModal('login'); toggleMenu();">Đăng Nhập</a></li>
+                <li class="mobile-only" id="mobileRegister"><a href="#" onclick="openModal('register'); toggleMenu();" class="btn-primary-mobile">Đăng Ký</a></li>
+            `;
+        }
+
+        landingSections.forEach(el => el.style.display = '');
+        if (studentDashboard) {
+            studentDashboard.style.display = 'none';
+        }
     }
 });
 
