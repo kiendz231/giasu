@@ -14,7 +14,9 @@ import {
     getFirestore, 
     collection, 
     addDoc, 
-    serverTimestamp 
+    serverTimestamp,
+    doc,
+    getDoc
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
 // Your web app's Firebase configuration
@@ -336,6 +338,7 @@ onAuthStateChanged(auth, (user) => {
         if (currentUserPlaceholder) currentUserPlaceholder.textContent = (user.displayName || user.email).charAt(0).toUpperCase();
 
         switchStudentTab('courses');
+        loadStudentCourses(user.uid);
 
     } else {
         // User is signed out.
@@ -394,5 +397,82 @@ window.toggleMenu = function() {
     }
     if (menuIcon) {
         menuIcon.textContent = '☰';
+    }
+}
+
+// 9. Load Student Courses and Dynamic Locking UI
+async function loadStudentCourses(uid) {
+    try {
+        const docRef = doc(db, "student_courses", uid);
+        const docSnap = await getDoc(docRef);
+        
+        let webAccess = false;
+        let englishAccess = false;
+        let mathAccess = false;
+
+        if (docSnap.exists()) {
+            const data = docSnap.data();
+            webAccess = !!data.web;
+            englishAccess = !!data.english;
+            mathAccess = !!data.math;
+        }
+
+        // Update Web Card UI
+        updateCourseCardUI('web', webAccess, 'Lập Trình Web Thực Chiến', "switchStudentTab('classroom')");
+        
+        // Update English Card UI
+        updateCourseCardUI('english', englishAccess, 'Chinh Phục Tiếng Anh Giao Tiếp', "alert('Đang tải nội dung khóa học...')");
+        
+        // Update Math Card UI
+        updateCourseCardUI('math', mathAccess, 'Toán Cao Cấp Đại Cương', "alert('Đang tải nội dung khóa học...')");
+
+    } catch (error) {
+        console.error("Lỗi khi tải thông tin khóa học được cấp:", error);
+    }
+}
+
+function updateCourseCardUI(courseKey, hasAccess, courseTitle, originalOnclick) {
+    const card = document.getElementById(`courseCard-${courseKey}`);
+    const badge = document.getElementById(`courseBadge-${courseKey}`);
+    const btn = document.getElementById(`courseBtn-${courseKey}`);
+
+    if (!card || !badge || !btn) return;
+
+    if (hasAccess) {
+        // Unlocked state
+        card.style.opacity = '1';
+        card.style.filter = 'none';
+        
+        if (courseKey === 'math') {
+            badge.className = 'course-badge badge-new';
+            badge.textContent = 'Mới';
+            badge.style.background = ''; // reset to default CSS style
+            btn.className = 'btn btn-outline';
+            btn.textContent = 'Bắt Đầu Học';
+        } else {
+            badge.className = 'course-badge';
+            badge.textContent = 'Đang học';
+            badge.style.background = ''; // reset
+            btn.className = 'btn btn-primary';
+            btn.textContent = 'Tiếp Tục Học';
+        }
+        
+        btn.disabled = false;
+        btn.setAttribute('onclick', originalOnclick);
+    } else {
+        // Locked state
+        card.style.opacity = '0.7';
+        card.style.filter = 'grayscale(0.3)';
+        
+        badge.className = 'course-badge';
+        badge.style.background = '#64748b'; // gray
+        badge.textContent = '🔒 Chưa Cấp';
+        
+        btn.className = 'btn btn-outline';
+        btn.style.borderColor = '#94a3b8';
+        btn.style.color = '#64748b';
+        btn.textContent = 'Liên Hệ Admin';
+        btn.disabled = false;
+        btn.setAttribute('onclick', `alert('Khóa học "${courseTitle}" chưa được cấp quyền bởi quản trị viên. Vui lòng liên hệ Admin để kích hoạt!')`);
     }
 }

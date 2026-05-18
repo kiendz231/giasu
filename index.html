@@ -123,8 +123,8 @@
                 <p>Tiếp tục hành trình chinh phục kiến thức mới</p>
             </div>
             <div class="courses-grid">
-                <div class="course-card glass-card">
-                    <div class="course-badge">Đang học</div>
+                <div class="course-card glass-card" id="courseCard-web">
+                    <div class="course-badge" id="courseBadge-web">Đang học</div>
                     <div class="course-header-bg gradient-blue">💻</div>
                     <div class="course-body">
                         <h3>Lập Trình Web Thực Chiến</h3>
@@ -138,11 +138,11 @@
                                 <div class="progress-fill" style="width: 80%;"></div>
                             </div>
                         </div>
-                        <button class="btn btn-primary" style="width: 100%; border-radius: 12px;" onclick="switchStudentTab('classroom')">Tiếp Tục Học</button>
+                        <button class="btn btn-primary" id="courseBtn-web" style="width: 100%; border-radius: 12px;" onclick="switchStudentTab('classroom')">Tiếp Tục Học</button>
                     </div>
                 </div>
-                <div class="course-card glass-card">
-                    <div class="course-badge">Đang học</div>
+                <div class="course-card glass-card" id="courseCard-english">
+                    <div class="course-badge" id="courseBadge-english">Đang học</div>
                     <div class="course-header-bg gradient-green">🇬🇧</div>
                     <div class="course-body">
                         <h3>Chinh Phục Tiếng Anh Giao Tiếp</h3>
@@ -156,11 +156,11 @@
                                 <div class="progress-fill" style="width: 45%; background: #10b981;"></div>
                             </div>
                         </div>
-                        <button class="btn btn-primary" style="width: 100%; border-radius: 12px;" onclick="alert('Đang tải nội dung khóa học...')">Tiếp Tục Học</button>
+                        <button class="btn btn-primary" id="courseBtn-english" style="width: 100%; border-radius: 12px;" onclick="alert('Đang tải nội dung khóa học...')">Tiếp Tục Học</button>
                     </div>
                 </div>
-                <div class="course-card glass-card">
-                    <div class="course-badge badge-new">Mới</div>
+                <div class="course-card glass-card" id="courseCard-math">
+                    <div class="course-badge badge-new" id="courseBadge-math">Mới</div>
                     <div class="course-header-bg gradient-purple">📐</div>
                     <div class="course-body">
                         <h3>Toán Cao Cấp Đại Cương</h3>
@@ -174,7 +174,7 @@
                                 <div class="progress-fill" style="width: 0%;"></div>
                             </div>
                         </div>
-                        <button class="btn btn-outline" style="width: 100%; border-radius: 12px;" onclick="alert('Đang tải nội dung khóa học...')">Bắt Đầu Học</button>
+                        <button class="btn btn-outline" id="courseBtn-math" style="width: 100%; border-radius: 12px;" onclick="alert('Đang tải nội dung khóa học...')">Bắt Đầu Học</button>
                     </div>
                 </div>
             </div>

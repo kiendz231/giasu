@@ -11,7 +11,9 @@ import {
     deleteDoc,
     doc,
     query,
-    orderBy
+    orderBy,
+    setDoc,
+    getDoc
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
 // Your web app's Firebase configuration
@@ -95,32 +97,74 @@ async function loadAllData() {
 // 1. Fetch Users
 async function loadUsers() {
     try {
+        // Fetch all course permissions at once to prevent N+1 queries
+        const coursePermissions = {};
+        const permissionsSnapshot = await getDocs(collection(db, "student_courses"));
+        permissionsSnapshot.forEach(doc => {
+            coursePermissions[doc.id] = doc.data();
+        });
+
         const usersSnapshot = await getDocs(query(collection(db, "users"), orderBy("createdAt", "desc")));
         const total = usersSnapshot.size;
         statTotalUsers.textContent = total;
         countUsers.textContent = `${total} học viên`;
 
         if (total === 0) {
-            usersTableBody.innerHTML = `<tr><td colspan="5" class="table-empty">Chưa có học viên nào đăng ký.</td></tr>`;
+            usersTableBody.innerHTML = `<tr><td colspan="6" class="table-empty">Chưa có học viên nào đăng ký.</td></tr>`;
             return;
         }
 
         usersTableBody.innerHTML = '';
-        usersSnapshot.forEach((doc) => {
-            const data = doc.data();
+        usersSnapshot.forEach((docSnap) => {
+            const data = docSnap.data();
+            const permissions = coursePermissions[data.uid] || { web: false, english: false, math: false };
+            
             const row = document.createElement('tr');
             row.innerHTML = `
                 <td><strong>${data.name || 'Không rõ'}</strong></td>
                 <td>${data.email}</td>
-                <td><code style="font-size: 12px; background: rgba(15,23,42,0.05); padding: 2px 6px; border-radius: 4px;">${data.uid}</code></td>
+                <td><code style="font-size: 11px; background: rgba(15,23,42,0.05); padding: 2px 6px; border-radius: 4px;">${data.uid}</code></td>
                 <td><span style="font-size: 11px; font-weight:700; background: ${data.provider === 'google' ? '#f0fdf4' : '#eff6ff'}; color: ${data.provider === 'google' ? '#166534' : '#1e40af'}; padding: 4px 10px; border-radius: 50px;">${(data.provider || 'Password').toUpperCase()}</span></td>
                 <td>${formatTime(data.createdAt)}</td>
+                <td>
+                    <div style="display: flex; gap: 10px; align-items: center;">
+                        <label style="display: flex; align-items: center; gap: 4px; font-size: 12px; font-weight: 500; cursor: pointer;">
+                            <input type="checkbox" class="course-toggle" data-uid="${data.uid}" data-course="web" ${permissions.web ? 'checked' : ''}> Web
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 4px; font-size: 12px; font-weight: 500; cursor: pointer;">
+                            <input type="checkbox" class="course-toggle" data-uid="${data.uid}" data-course="english" ${permissions.english ? 'checked' : ''}> Anh
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 4px; font-size: 12px; font-weight: 500; cursor: pointer;">
+                            <input type="checkbox" class="course-toggle" data-uid="${data.uid}" data-course="math" ${permissions.math ? 'checked' : ''}> Toán
+                        </label>
+                    </div>
+                </td>
             `;
             usersTableBody.appendChild(row);
         });
+
+        // Add event listeners to course toggles
+        document.querySelectorAll('.course-toggle').forEach(checkbox => {
+            checkbox.addEventListener('change', async (e) => {
+                const uid = e.target.getAttribute('data-uid');
+                const course = e.target.getAttribute('data-course');
+                const isChecked = e.target.checked;
+                
+                try {
+                    await setDoc(doc(db, "student_courses", uid), {
+                        [course]: isChecked
+                    }, { merge: true });
+                } catch (err) {
+                    console.error("Lỗi cập nhật quyền học:", err);
+                    alert("Không thể cập nhật quyền học: " + err.message);
+                    e.target.checked = !isChecked; // Revert
+                }
+            });
+        });
+
     } catch (e) {
         console.error("Lỗi loadUsers:", e);
-        usersTableBody.innerHTML = `<tr><td colspan="5" class="table-error">Lỗi tải dữ liệu. Bán hãy chắc chắn Firestore rules cho phép truy cập.</td></tr>`;
+        usersTableBody.innerHTML = `<tr><td colspan="6" class="table-error">Lỗi tải dữ liệu. Hãy chắc chắn Firestore rules cho phép truy cập.</td></tr>`;
     }
 }
 
